@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom global overrides for premium viewport-constrained cockpit feel */
+html, body, #root {
+  background-color: #000000;
+  color: #f3f4f6;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+/* Webkit scrollbar optimizations if scroll bars are triggered */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Fluid neon glass effect classes mimicking Apple Fitness & iOS */
+.glass-effect {
+  background: rgba(18, 18, 20, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-accent-active {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.glass-accent-green {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.glass-accent-orange {
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.glow-blue {
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.glow-green {
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.glow-orange {
+  text-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+}
+
+/* Ripple animations */
+@keyframes ripple {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+.animate-pulse-slow {
+  animation: ripple 4s infinite ease-in-out;
+}
+
+.mask-image-bottom-fade {
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.mask-image-top-fade {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%);
+}
+

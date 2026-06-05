@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user's profile and settings.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "visions": {
+          "type": "array"
+        },
+        "traits": {
+          "type": "array"
+        },
+        "goals": {
+          "type": "array"
+        },
+        "brainDumps": {
+          "type": "array"
+        },
+        "funnels": {
+          "type": "object"
+        },
+        "compromissoOathDate": {
+          "type": "string"
+        }
+      }
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "A tracking habit.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "targetValue": {
+          "type": "number"
+        },
+        "currentValue": {
+          "type": "number"
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "category": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "logs": {
+          "type": "array"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile with all arrays and local tracking data."
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "A user's habits."
+    }
+  }
+}

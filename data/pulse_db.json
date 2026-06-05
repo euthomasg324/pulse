@@ -1,0 +1,947 @@
+{
+  "habits": [
+    {
+      "id": "h-dormir-cedo",
+      "name": "Dormir Cedo",
+      "icon": "Moon",
+      "color": "purple",
+      "type": "check",
+      "targetValue": 1,
+      "currentValue": 0,
+      "completed": 0,
+      "frequencyType": "daily",
+      "timeOfDay": "22:30",
+      "priority": "medium",
+      "category": "Ritmo",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-17",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-19",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-20",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-21",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-22",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-23",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-24",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-25",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-26",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-27",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-29",
+          "value": 0,
+          "completed": false
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-ler-livro",
+      "name": "Ler Livro",
+      "icon": "BookOpen",
+      "color": "blue",
+      "type": "quantitative",
+      "targetValue": 30,
+      "currentValue": 30,
+      "completed": 1,
+      "frequencyType": "daily",
+      "timeOfDay": "21:00",
+      "priority": "medium",
+      "category": "Execução",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-17",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 23,
+          "completed": false
+        },
+        {
+          "date": "2026-05-19",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-20",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-21",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-22",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-23",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-24",
+          "value": 19,
+          "completed": false
+        },
+        {
+          "date": "2026-05-25",
+          "value": 20,
+          "completed": false
+        },
+        {
+          "date": "2026-05-26",
+          "value": 21,
+          "completed": false
+        },
+        {
+          "date": "2026-05-27",
+          "value": 30,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 23,
+          "completed": false
+        },
+        {
+          "date": "2026-05-29",
+          "value": 30,
+          "completed": true
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-banho-gelado",
+      "name": "Banho Gelado",
+      "icon": "Droplets",
+      "color": "blue",
+      "type": "check",
+      "targetValue": 1,
+      "currentValue": 1,
+      "completed": 1,
+      "frequencyType": "daily",
+      "priority": "low",
+      "category": "Energia",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-17",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-19",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-20",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-21",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-22",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-23",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-24",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-25",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-26",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-27",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-29",
+          "value": 1,
+          "completed": true
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-meditar",
+      "name": "Meditar",
+      "icon": "Clock",
+      "color": "purple",
+      "type": "timed",
+      "targetValue": 20,
+      "currentValue": 20,
+      "completed": 1,
+      "frequencyType": "daily",
+      "priority": "low",
+      "category": "Energia",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 20,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 15,
+          "completed": false
+        },
+        {
+          "date": "2026-05-17",
+          "value": 9,
+          "completed": false
+        },
+        {
+          "date": "2026-05-18",
+          "value": 12,
+          "completed": false
+        },
+        {
+          "date": "2026-05-19",
+          "value": 20,
+          "completed": true
+        },
+        {
+          "date": "2026-05-20",
+          "value": 9,
+          "completed": false
+        },
+        {
+          "date": "2026-05-21",
+          "value": 10,
+          "completed": false
+        },
+        {
+          "date": "2026-05-22",
+          "value": 20,
+          "completed": true
+        },
+        {
+          "date": "2026-05-23",
+          "value": 20,
+          "completed": true
+        },
+        {
+          "date": "2026-05-24",
+          "value": 11,
+          "completed": false
+        },
+        {
+          "date": "2026-05-25",
+          "value": 10,
+          "completed": false
+        },
+        {
+          "date": "2026-05-26",
+          "value": 10,
+          "completed": false
+        },
+        {
+          "date": "2026-05-27",
+          "value": 10,
+          "completed": false
+        },
+        {
+          "date": "2026-05-28",
+          "value": 20,
+          "completed": true
+        },
+        {
+          "date": "2026-05-29",
+          "value": 20,
+          "completed": true
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-acumular-energia",
+      "name": "Acumular Energia",
+      "icon": "Zap",
+      "color": "green",
+      "type": "check",
+      "targetValue": 1,
+      "currentValue": 1,
+      "completed": 1,
+      "frequencyType": "daily",
+      "priority": "high",
+      "category": "Energia",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-17",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-19",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-20",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-21",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-22",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-23",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-24",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-25",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-26",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-27",
+          "value": 1,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 0,
+          "completed": false
+        },
+        {
+          "date": "2026-05-29",
+          "value": 1,
+          "completed": true
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-mensagens",
+      "name": "300 mensagens",
+      "icon": "MessageSquare",
+      "color": "blue",
+      "type": "quantitative",
+      "targetValue": 300,
+      "currentValue": 300,
+      "completed": 1,
+      "frequencyType": "daily",
+      "timeOfDay": "08:00",
+      "priority": "high",
+      "category": "Execução",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 117,
+          "completed": false
+        },
+        {
+          "date": "2026-05-16",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-17",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-19",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-20",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-21",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-22",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-23",
+          "value": 198,
+          "completed": false
+        },
+        {
+          "date": "2026-05-24",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-25",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-26",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-27",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 300,
+          "completed": true
+        },
+        {
+          "date": "2026-05-29",
+          "value": 300,
+          "completed": true
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-ligacoes",
+      "name": "50 ligações",
+      "icon": "PhoneCall",
+      "color": "orange",
+      "type": "quantitative",
+      "targetValue": 50,
+      "currentValue": 15,
+      "completed": false,
+      "frequencyType": "daily",
+      "timeOfDay": "10:00",
+      "priority": "high",
+      "category": "Execução",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-17",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 22,
+          "completed": false
+        },
+        {
+          "date": "2026-05-19",
+          "value": 37,
+          "completed": false
+        },
+        {
+          "date": "2026-05-20",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-21",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-22",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-23",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-24",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-25",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-26",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-27",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-29",
+          "value": 24,
+          "completed": false
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-remarketing",
+      "name": "50 remarketing",
+      "icon": "TrendingUp",
+      "color": "orange",
+      "type": "quantitative",
+      "targetValue": 50,
+      "currentValue": 50,
+      "completed": 1,
+      "frequencyType": "daily",
+      "timeOfDay": "14:00",
+      "priority": "high",
+      "category": "Resultado",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 27,
+          "completed": false
+        },
+        {
+          "date": "2026-05-17",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-19",
+          "value": 37,
+          "completed": false
+        },
+        {
+          "date": "2026-05-20",
+          "value": 36,
+          "completed": false
+        },
+        {
+          "date": "2026-05-21",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-22",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-23",
+          "value": 19,
+          "completed": false
+        },
+        {
+          "date": "2026-05-24",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-25",
+          "value": 25,
+          "completed": false
+        },
+        {
+          "date": "2026-05-26",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-27",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 50,
+          "completed": true
+        },
+        {
+          "date": "2026-05-29",
+          "value": 50,
+          "completed": true
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-agua",
+      "name": "Água",
+      "icon": "Droplets",
+      "color": "blue",
+      "type": "quantitative",
+      "targetValue": 3,
+      "currentValue": 3,
+      "completed": 1,
+      "frequencyType": "daily",
+      "priority": "medium",
+      "category": "Energia",
+      "createdAt": "2026-05-30T06:42:38.458Z",
+      "logs": [
+        {
+          "date": "2026-05-15",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-16",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-17",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-18",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-19",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-20",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-21",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-22",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-23",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-24",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-25",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-26",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-27",
+          "value": 3,
+          "completed": true
+        },
+        {
+          "date": "2026-05-28",
+          "value": 1,
+          "completed": false
+        },
+        {
+          "date": "2026-05-29",
+          "value": 3,
+          "completed": true
+        }
+      ],
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-acordar-cedo",
+      "name": "Acordar Cedo",
+      "icon": "Sun",
+      "color": "green",
+      "type": "check",
+      "targetValue": 1,
+      "currentValue": 1,
+      "completed": 1,
+      "frequencyType": "daily",
+      "frequencyInterval": null,
+      "timeOfDay": "06:00",
+      "priority": "high",
+      "category": "Ritmo",
+      "createdAt": "2026-05-30T07:21:06.036Z",
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-exercicio-fisico",
+      "name": "Exercício Físico",
+      "icon": "Dumbbell",
+      "color": "green",
+      "type": "check",
+      "targetValue": 1,
+      "currentValue": 0,
+      "completed": 0,
+      "frequencyType": "daily",
+      "frequencyInterval": null,
+      "timeOfDay": null,
+      "priority": "high",
+      "category": "Energia",
+      "createdAt": "2026-05-30T07:23:21.647Z",
+      "lastResetDate": "2026-05-30"
+    },
+    {
+      "id": "h-arrumar-casa-30",
+      "name": "Arrumar a casa por 30 min",
+      "icon": "Layers",
+      "color": "orange",
+      "type": "quantitative",
+      "targetValue": 30,
+      "currentValue": 0,
+      "completed": 0,
+      "frequencyType": "daily",
+      "frequencyInterval": null,
+      "timeOfDay": null,
+      "priority": "medium",
+      "category": "Execução",
+      "createdAt": "2026-05-30T07:23:32.017Z",
+      "lastResetDate": "2026-05-30"
+    }
+  ],
+  "timeline": [
+    {
+      "id": "t-1",
+      "time": "06:00",
+      "title": "Acordar Cedo",
+      "habitId": "h-acordar-cedo",
+      "completed": false
+    },
+    {
+      "id": "t-2",
+      "time": "08:00",
+      "title": "Enviar Mensagens",
+      "habitId": "h-mensagens",
+      "completed": false
+    },
+    {
+      "id": "t-3",
+      "time": "10:00",
+      "title": "Ligações",
+      "habitId": "h-ligacoes",
+      "completed": false
+    },
+    {
+      "id": "t-4",
+      "time": "14:00",
+      "title": "Remarketing",
+      "habitId": "h-remarketing",
+      "completed": false
+    },
+    {
+      "id": "t-5",
+      "time": "21:00",
+      "title": "Ler Livro",
+      "habitId": "h-ler-livro",
+      "completed": false
+    },
+    {
+      "id": "t-6",
+      "time": "22:30",
+      "title": "Dormir Cedo",
+      "habitId": "h-dormir-cedo",
+      "completed": 0
+    }
+  ],
+  "notifications": [
+    "A consistência não liga para o seu humor. Execute.",
+    "Zere o ego, mantenha o ritmo.",
+    "O volume limpo gera inevitabilidade operacional.",
+    "A disciplina militar foca no processo, não na recompensa.",
+    "Seu melhor horário de foco começou."
+  ],
+  "habit_logs": [
+    {
+      "habitId": "h-dormir-cedo",
+      "date": "2026-05-30",
+      "value": 0,
+      "completed": 0
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Pulse: Tactical Execution & Rhythm",
+  "short_name": "Pulse",
+  "description": "Sistema de execução diária pessoal de alta performance, consistência de metas e métricas em modo guerra.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "status_bar": "black-translucent",
+  "icons": [
+    {
+      "src": "/pulse_logo.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pulse_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
