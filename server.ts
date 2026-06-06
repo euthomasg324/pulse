@@ -1316,17 +1316,73 @@ Frase com no máximo 14 palavras. Escreva no formato:
     count: hourMap[hour]
   })).sort((a,b) => a.hour.localeCompare(b.hour));
 
+  let quantVolumes = dbState.habits
+    .filter(h => h.type === 'quantitative' || h.type === 'accumulative')
+    .map(h => {
+      let total = h.currentValue;
+      h.logs.forEach(l => { total += l.value; });
+      return { id: h.id, name: h.name, icon: h.icon, total: total, color: h.color };
+    })
+    .sort((a,b) => b.total - a.total)
+    .slice(0, 4);
+
+  if (quantVolumes.length < 4) {
+      const topChecks = dbState.habits
+        .filter(h => h.type === 'check')
+        .map(h => {
+            let total = h.completed ? 1 : 0;
+            h.logs.forEach(l => { total += l.completed ? 1 : 0; });
+            return { id: h.id, name: h.name, icon: h.icon, total, color: h.color };
+        })
+        .sort((a,b) => b.total - a.total)
+        .slice(0, 4 - quantVolumes.length);
+      quantVolumes = [...quantVolumes, ...topChecks];
+  }
+
+  const sortedHabits = [...habitsAnalysis].sort((a,b) => b.completionRate - a.completionRate);
+  const bestHabit = sortedHabits[0];
+  const worstHabit = sortedHabits[sortedHabits.length - 1];
+  
+  let correlationEngine = [];
+  if (bestHabit && bestHabit.completionRate > 0) {
+      correlationEngine.push({
+          title: `EFEITO CASCATA: ${bestHabit.name}`,
+          tag: `+${bestHabit.completionRate}% RETAIN`,
+          color: "emerald",
+          description: `Estatística aponta que ao manter disciplina em "${bestHabit.name}", sua capacidade geral de conclusão de sistema operacional aumenta exponencialmente.`
+      });
+  } else {
+      correlationEngine.push({
+          title: `COLETA DE DADOS EM ANDAMENTO`,
+          tag: `AGUARDANDO`,
+          color: "blue",
+          description: `Motor de busca aguardando amostragem estatística suficiente para correlação positiva.`
+      });
+  }
+
+  if (worstHabit && worstHabit.completionRate < 100 && worstHabit.completionRate >= 0) {
+      correlationEngine.push({
+           title: `GARGALO ACOPLADO: ${worstHabit.name}`,
+           tag: `-${100 - worstHabit.completionRate}% DROP`,
+           color: "rose",
+           description: `Nos dias em que a meta de "${worstHabit.name}" falha, há fragmentação visível na integridade geral do seu rendimento diário.`
+      });
+  } else {
+      correlationEngine.push({
+           title: `SISTEMA ÍNTEGRO`,
+           tag: `100% HOLD`,
+           color: "emerald",
+           description: `Bateria operacional perfeita. Nenhuma falha recorrente crítica detectada.`
+      });
+  }
+
   res.json({
     score: {
       today: todayScore,
       week: weekScore
     },
-    volumes: {
-      messages: totalMsgs,
-      calls: totalCalls,
-      chips: 0,
-      water: Number(waterLiters.toFixed(1))
-    },
+    volumes: quantVolumes,
+    correlations: correlationEngine,
     streakDays,
     weeklyTrend,
     dailyExecutionHours,

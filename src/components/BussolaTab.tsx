@@ -63,81 +63,29 @@ export default function BussolaTab({
   const [bussolaSubTab, setBussolaSubTab] = useState<"visao" | "identidade" | "alvos">("visao");
 
   const [visions, setVisions] = useState<VisionItem[]>(() => {
-    const saved = localStorage.getItem("pulse_visions_v4");
+    const saved = localStorage.getItem("pulse_visions_v5");
     if (saved) return JSON.parse(saved);
-    return [
-      { id: "v-p5-1", text: "Paz Financeira", category: "paraiso", timeframe: "5_anos" },
-      { id: "v-p5-2", text: "Família Estruturada", category: "paraiso", timeframe: "5_anos" },
-      { id: "v-i5-1", text: "Zero Reais na Conta", category: "inferno", timeframe: "5_anos" },
-      { id: "v-p2-1", text: "Carro Próprio & Imagem", category: "paraiso", timeframe: "2_anos" },
-      { id: "v-p2-2", text: "Amparo Frequente ao Filho", category: "paraiso", timeframe: "2_anos" },
-      { id: "v-i2-1", text: "Distância Fixa da Criança", category: "inferno", timeframe: "2_anos" },
-      { id: "v-p1-1", text: "R$ 50k Mensais Fixos", category: "paraiso", timeframe: "1_ano" },
-      { id: "v-p1-2", text: "Físico e Inglês na Régua", category: "paraiso", timeframe: "1_ano" },
-      { id: "v-i1-1", text: "Desleixo e Dúvida Geral", category: "inferno", timeframe: "1_ano" },
-      { id: "v-p8-1", text: "Bater 30k Correntes", category: "paraiso", timeframe: "6_meses" },
-      { id: "v-i8-1", text: "Estagnação", category: "inferno", timeframe: "6_meses" },
-      { id: "v-p3-1", text: "Noivado Garantido", category: "paraiso", timeframe: "3_meses" },
-      { id: "v-p3-2", text: "Consistência de Treino 100%", category: "paraiso", timeframe: "3_meses" },
-      { id: "v-i3-1", text: "Voltar a Estaca Zero no Banco", category: "inferno", timeframe: "3_meses" },
-    ] as VisionItem[];
+    return [] as VisionItem[];
   });
 
   const [characteristics, setCharacteristics] = useState<IdentityCharacteristic[]>(() => {
-    const saved = localStorage.getItem("pulse_identity_characteristics_v1");
+    const saved = localStorage.getItem("pulse_identity_v2");
     if (saved) return JSON.parse(saved);
     return [
       {
         id: "c-1",
-        name: "Finanças & Foco",
-        pairs: [
-          { id: "p-1", goodBehavior: "Constância nos 50K e alocação segura", badBehavior: "Foge do planejamento e gasta à toa", balance: 50 },
-          { id: "p-1b", goodBehavior: "Analisa o painel financeiro frio", badBehavior: "Esconde a cabeça por medo de ver o saldo", balance: 50 }
-        ]
-      },
-      {
-        id: "c-2",
-        name: "Pilar Familiar",
-        pairs: [
-          { id: "p-2", goodBehavior: "Comunica os passos, protege a relação", badBehavior: "Fica distante para esconder falhas", balance: 50 },
-          { id: "p-2b", goodBehavior: "Tem presença genuína com o filho", badBehavior: "Vê o filho rápido por falta de tempo livre", balance: 50 }
-        ]
-      },
-      {
-        id: "c-3",
         name: "Físico & Mente",
         pairs: [
-          { id: "p-3", goodBehavior: "Vai pra academia religiosamente", badBehavior: "Adia treino porque acordou cansado", balance: 50 },
-          { id: "p-3b", goodBehavior: "Inglês 30 min sem falhar", badBehavior: "Inventa desculpa que amanhã estuda", balance: 50 }
+          { id: "p-3", goodBehavior: "Constância inegociável", badBehavior: "Rendimento por humor", balance: 50 },
         ]
       }
     ];
   });
 
   const [goals, setGoals] = useState<TargetGoal[]>(() => {
-    const saved = localStorage.getItem("pulse_goals_v2");
+    const saved = localStorage.getItem("pulse_goals_v3");
     if (saved) return JSON.parse(saved);
-    return [
-      {
-        id: "g-1",
-        title: "Operação Constância R$ 50k",
-        category: "Finanças",
-        connectedTo: "Fazer R$ 50k Mensais Constantes",
-        milestones: [
-          { id: "m-1", text: "Criar painel claro de despesas", completed: true },
-          { id: "m-2", text: "Alocar R$ 5k para segurança", completed: false },
-        ],
-      },
-      {
-        id: "g-2",
-        title: "Evolução Pessoal",
-        category: "Desenvolvimento",
-        connectedTo: "Shape na Régua & Fluência",
-        milestones: [
-          { id: "m-4", text: "Estudos diários em inglês (30 min)", completed: false },
-        ],
-      },
-    ];
+    return [];
   });
 
   const [brainDumps, setBrainDumps] = useState<BrainDump[]>(() => {
@@ -159,9 +107,9 @@ export default function BussolaTab({
 
   const [newBrainDumpText, setNewBrainDumpText] = useState("");
 
-  useEffect(() => { localStorage.setItem("pulse_visions_v4", JSON.stringify(visions)); }, [visions]);
-  useEffect(() => { localStorage.setItem("pulse_identity_characteristics_v1", JSON.stringify(characteristics)); }, [characteristics]);
-  useEffect(() => { localStorage.setItem("pulse_goals_v2", JSON.stringify(goals)); }, [goals]);
+  useEffect(() => { localStorage.setItem("pulse_visions_v5", JSON.stringify(visions)); }, [visions]);
+  useEffect(() => { localStorage.setItem("pulse_identity_v2", JSON.stringify(characteristics)); }, [characteristics]);
+  useEffect(() => { localStorage.setItem("pulse_goals_v3", JSON.stringify(goals)); }, [goals]);
   useEffect(() => { localStorage.setItem("pulse_braindumps", JSON.stringify(brainDumps)); }, [brainDumps]);
 
   const balance = React.useMemo(() => {
@@ -293,15 +241,15 @@ export default function BussolaTab({
 
       return (
         <div key={key} className="mb-1 bg-black/40 p-1.5 rounded-lg">
-          <div className="flex items-center gap-1.5 mb-1">
-             <div className="text-[7px] font-bold uppercase tracking-widest text-zinc-500">{label}</div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+             <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">{label}</div>
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {filtered.map(vision => (
-               <div key={vision.id} className={`group flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/5 bg-black hover:border-white/20 transition-all ${category === 'paraiso' ? 'hover:bg-cyan-900/40 text-cyan-50' : 'hover:bg-red-900/40 text-red-50'}`}>
-                  <div className="text-[8px] font-bold tracking-wide break-words leading-none">{vision.text}</div>
-                  <button onClick={(e) => handleDeleteVision(vision.id, e)} className="text-zinc-600 hover:text-white transition">
-                     <X className="w-2 h-2" />
+               <div key={vision.id} className={`group flex items-center gap-1.5 px-2 py-1 rounded border border-white/10 bg-black hover:border-white/20 transition-all ${category === 'paraiso' ? 'hover:bg-cyan-900/40 text-cyan-50' : 'hover:bg-red-900/40 text-red-50'}`}>
+                  <div className="text-[10px] font-bold tracking-wide break-words leading-none">{vision.text}</div>
+                  <button onClick={(e) => handleDeleteVision(vision.id, e)} className="text-zinc-500 hover:text-white transition">
+                     <X className="w-3 h-3" />
                   </button>
                </div>
             ))}
@@ -323,22 +271,22 @@ export default function BussolaTab({
               Bússola
             </h1>
 
-            <div className="flex bg-zinc-900/80 p-0.5 rounded-full border border-white/10 uppercase font-sans text-[9px] font-bold">
+            <div className="flex bg-zinc-900/80 p-0.5 rounded-full border border-white/10 uppercase font-sans text-[11px] font-bold">
               <button
                 onClick={() => { playHapticSound("tick"); setBussolaSubTab("visao"); }}
-                className={`py-1 px-3 rounded-full transition ${bussolaSubTab === "visao" ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`py-1 px-4 rounded-full transition ${bussolaSubTab === "visao" ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 Visão
               </button>
               <button
                 onClick={() => { playHapticSound("tick"); setBussolaSubTab("identidade"); }}
-                className={`py-1 px-3 rounded-full transition ${bussolaSubTab === "identidade" ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`py-1 px-4 rounded-full transition ${bussolaSubTab === "identidade" ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 Identidade
               </button>
               <button
                 onClick={() => { playHapticSound("tick"); setBussolaSubTab("alvos"); }}
-                className={`py-1 px-3 rounded-full transition ${bussolaSubTab === "alvos" ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`py-1 px-4 rounded-full transition ${bussolaSubTab === "alvos" ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 Macros & Obj.
               </button>
@@ -499,92 +447,92 @@ export default function BussolaTab({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-6 text-left pb-10 w-full h-full overflow-y-auto [&::-webkit-scrollbar]:hidden"
+              className="space-y-3 text-left pb-1 min-h-0 w-full h-full overflow-y-auto [&::-webkit-scrollbar]:hidden"
             >
-              <div className="rounded-[28px] border border-white/5 bg-zinc-950 p-5 shadow-xl">
-                <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-3">
-                  <Target className="w-5 h-5 text-zinc-400" />
+              <div className="rounded-[24px] border border-white/5 bg-zinc-950 p-4 shadow-xl">
+                <div className="flex items-center gap-2 mb-3 border-b border-white/5 pb-2">
+                  <Target className="w-4 h-4 text-zinc-400" />
                   <div>
-                    <h3 className="text-sm font-display font-black text-white uppercase tracking-tight">Macros & Objetivos</h3>
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Projetos primários alinhados</span>
+                    <h3 className="text-sm font-display font-black text-white uppercase tracking-tight leading-none">Macros & Objetivos</h3>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase mt-1 inline-block">Projetos primários alinhados</span>
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {goals.map((goal) => {
                     const completed = goal.milestones.filter((m) => m.completed).length;
                     const total = goal.milestones.length;
                     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
                     return (
-                      <div key={goal.id} className="p-4 rounded-xl bg-black border border-white/5">
-                        <div className="flex justify-between items-start mb-3">
+                      <div key={goal.id} className="p-3 rounded-xl bg-black border border-white/5">
+                        <div className="flex justify-between items-start mb-2">
                           <div>
-                            <span className="text-[8px] bg-white/10 text-white px-2 py-0.5 rounded-md uppercase tracking-wider font-mono">{goal.category}</span>
-                            <h4 className="text-sm font-display font-bold text-white tracking-tight mt-1.5">{goal.title}</h4>
+                            <span className="text-[8px] bg-white/10 text-white px-2 py-0.5 rounded uppercase tracking-wider font-mono leading-none">{goal.category}</span>
+                            <h4 className="text-[13px] font-display font-bold text-white tracking-tight mt-1 leading-tight">{goal.title}</h4>
                           </div>
-                          <span className="text-xs font-mono font-bold text-white bg-zinc-900 border border-white/10 px-2 py-0.5 rounded-lg">{percent}%</span>
+                          <span className="text-[10px] font-mono font-bold text-white bg-zinc-900 border border-white/10 px-2 py-0.5 rounded-lg">{percent}%</span>
                         </div>
-                        <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden mb-4 border border-white/5">
+                        <div className="w-full bg-zinc-900 h-1 rounded-full overflow-hidden mb-2 border border-white/5">
                           <div className="bg-emerald-400 h-full transition-all duration-500 shadow-[0_0_8px_#34d399]" style={{ width: `${percent}%` }} />
                         </div>
-                        <div className="space-y-2 pt-2 border-t border-white/5">
+                        <div className="space-y-1 pt-1 border-t border-white/5">
                           {goal.milestones.map((ms) => (
-                            <div key={ms.id} onClick={() => toggleMilestone(goal.id, ms.id)} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white/5 cursor-pointer transition select-none">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center transition border ${ms.completed ? "border-emerald-500 bg-emerald-500/20 text-emerald-400" : "border-zinc-700 bg-zinc-900"}`}>
-                                {ms.completed && <Check className="w-3 h-3 stroke-[3]" />}
+                            <div key={ms.id} onClick={() => toggleMilestone(goal.id, ms.id)} className="flex items-center gap-2 py-1 px-1.5 rounded-lg hover:bg-white/5 cursor-pointer transition select-none">
+                              <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition border ${ms.completed ? "border-emerald-500 bg-emerald-500/20 text-emerald-400" : "border-zinc-700 bg-zinc-900"}`}>
+                                {ms.completed && <Check className="w-[8px] h-[8px] stroke-[3]" />}
                               </span>
-                              <span className={`text-[11px] font-mono ${ms.completed ? "line-through text-zinc-600" : "text-zinc-300"}`}>{ms.text}</span>
+                              <span className={`text-[10px] font-mono leading-tight ${ms.completed ? "line-through text-zinc-600" : "text-zinc-300"}`}>{ms.text}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     );
                   })}
+                  {goals.length === 0 && <div className="text-center py-4 text-zinc-600 font-mono text-[10px] uppercase">Vazio. Adicione macros.</div>}
                 </div>
               </div>
 
-              <div className="rounded-[28px] border border-white/5 bg-zinc-950 p-5 shadow-xl">
-                <div className="flex items-center gap-2 mb-4 border-b border-white/5 pb-3">
-                  <BrainCircuit className="w-5 h-5 text-purple-400" />
+              <div className="rounded-[24px] border border-white/5 bg-zinc-950 p-4 shadow-xl">
+                <div className="flex items-center gap-2 mb-3 border-b border-white/5 pb-2">
+                  <BrainCircuit className="w-4 h-4 text-purple-400" />
                   <div>
-                    <h3 className="text-sm font-display font-black text-white uppercase tracking-tight">Inbox / Brain Dump</h3>
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Anotações e tarefas soltas</span>
+                    <h3 className="text-sm font-display font-black text-white uppercase tracking-tight leading-none">Inbox / Brain Dump</h3>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase mt-1 inline-block">Anotações e tarefas soltas</span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-3">
                   <input
                     type="text"
                     placeholder="Esvazie um pensamento..."
                     value={newBrainDumpText}
                     onChange={(e) => setNewBrainDumpText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleAddBrainDump(); }}
-                    className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-mono placeholder-zinc-700 focus:outline-none focus:border-purple-500/50 transition-all text-white"
+                    className="flex-1 bg-black border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono placeholder-zinc-700 focus:outline-none focus:border-purple-500/50 transition-all text-white"
                   />
-                  <button onClick={handleAddBrainDump} className="px-4 bg-purple-600/20 hover:bg-purple-600 border border-purple-500/30 text-purple-400 hover:text-white rounded-xl font-bold transition flex items-center justify-center">
-                    <Plus className="w-5 h-5" />
+                  <button onClick={handleAddBrainDump} className="px-3 bg-purple-600/20 hover:bg-purple-600 border border-purple-500/30 text-purple-400 hover:text-white rounded-xl transition flex items-center justify-center">
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:hidden pr-1">
+                <div className="space-y-1.5 max-h-[160px] overflow-y-auto [&::-webkit-scrollbar]:hidden pr-1">
                   {brainDumps.map((b) => (
-                    <div key={b.id} className="flex justify-between items-center p-3 bg-black rounded-xl border border-white/5 hover:border-white/10 transition">
-                      <div onClick={() => handleToggleBrainDump(b.id)} className="flex items-center gap-3 flex-1 cursor-pointer">
-                        <span className={`w-4 h-4 rounded flex items-center justify-center transition border ${b.completed ? "border-purple-500 text-purple-400 bg-purple-500/10" : "border-zinc-700 bg-zinc-900"}`}>
-                          {b.completed && <Check className="w-3 h-3 stroke-[3]" />}
+                    <div key={b.id} className="flex justify-between items-center p-2 bg-black rounded-lg border border-white/5 hover:border-white/10 transition">
+                      <div onClick={() => handleToggleBrainDump(b.id)} className="flex items-center gap-2 flex-1 cursor-pointer">
+                        <span className={`w-3.5 h-3.5 rounded flex items-center justify-center transition border ${b.completed ? "border-purple-500 text-purple-400 bg-purple-500/10" : "border-zinc-700 bg-zinc-900"}`}>
+                          {b.completed && <Check className="w-[8px] h-[8px] stroke-[3]" />}
                         </span>
-                        <div className="flex flex-col text-left">
-                          <span className={`text-xs font-mono tracking-wide ${b.completed ? "line-through text-zinc-600" : "text-zinc-300"}`}>{b.text}</span>
-                          <span className="text-[9px] text-zinc-600 font-mono mt-0.5">{b.createdAt}</span>
+                        <div className="flex flex-col text-left leading-tight">
+                          <span className={`text-[10px] font-mono tracking-wide ${b.completed ? "line-through text-zinc-600" : "text-zinc-300"}`}>{b.text}</span>
                         </div>
                       </div>
-                      <button onClick={() => handleDeleteBrainDump(b.id)} className="p-2 text-zinc-600 hover:text-red-400 transition bg-white/5 rounded-lg ml-2 hover:bg-white/10">
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <button onClick={() => handleDeleteBrainDump(b.id)} className="p-1.5 text-zinc-600 hover:text-red-400 transition bg-white/5 rounded-md ml-2 hover:bg-white/10">
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
-                  {brainDumps.length === 0 && <div className="text-center py-8 text-zinc-600 font-mono text-xs uppercase">Mente limpa. Nenhum dump aberto.</div>}
+                  {brainDumps.length === 0 && <div className="text-center py-4 text-zinc-600 font-mono text-[9px] uppercase">Mente limpa. Nenhum dump aberto.</div>}
                 </div>
               </div>
             </motion.div>
