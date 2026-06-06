@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from "motion/react";
 interface HabitoIndividualModalProps {
   habit: Habit;
   onClose: () => void;
-  onUpdateHabit: (id: string, currentValue: number, completed?: boolean) => void;
+  onUpdateHabit: (id: string, currentValue: number, completed?: boolean, todayPhoto?: string, fullHabitUpdate?: Partial<Habit>) => void;
   playHapticSound: (type: 'tick' | 'complete' | 'reset' | 'warguerra') => void;
 }
 
@@ -101,8 +101,8 @@ export default function HabitoIndividualModal({
       if (log) {
         score = log.completed ? 100 : Math.round((log.value / habit.targetValue) * 100);
       } else {
-        // Fallback placeholder with slight consistency for early days
-        score = Math.random() > 0.3 ? 100 : 0;
+        // Real tracking, if there's no log, score is true 0
+        score = 0;
       }
       return {
         label: days[d.getDay()],
@@ -212,6 +212,36 @@ export default function HabitoIndividualModal({
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${habit.exigencia === 'Extremo' ? 'text-red-400' : habit.exigencia === 'Alto' ? 'text-orange-400' : 'text-emerald-400'}`}>
                   {habit.exigencia || 'Normal'}
                 </span>
+              </div>
+              
+              <div className="flex justify-between items-center bg-black border border-white/5 rounded-xl px-3 py-2">
+                <span className="text-[9px] text-zinc-400 font-mono uppercase">Horário Alvo</span>
+                <div className="flex items-center gap-2">
+                  {habit.timeOfDay ? (
+                    <input 
+                      type="time" 
+                      value={habit.timeOfDay} 
+                      onChange={(e) => {
+                        playHapticSound('tick');
+                        onUpdateHabit(habit.id, habit.currentValue, habit.completed, habit.todayPhoto, { timeOfDay: e.target.value });
+                      }}
+                      className="bg-zinc-900 border border-white/10 rounded-md px-2 py-1 text-[10px] text-white focus:outline-none"
+                    />
+                  ) : null}
+                  <button 
+                    onClick={() => {
+                      playHapticSound('tick');
+                      if (habit.timeOfDay) {
+                        onUpdateHabit(habit.id, habit.currentValue, habit.completed, habit.todayPhoto, { timeOfDay: "" });
+                      } else {
+                        onUpdateHabit(habit.id, habit.currentValue, habit.completed, habit.todayPhoto, { timeOfDay: "08:00" });
+                      }
+                    }}
+                    className={`text-[8px] px-2 py-1 uppercase rounded font-bold tracking-wider transition ${habit.timeOfDay ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}
+                  >
+                    {habit.timeOfDay ? "Remover" : "Adicionar Horário"}
+                  </button>
+                </div>
               </div>
               
               {connectedMacro && (

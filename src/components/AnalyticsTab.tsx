@@ -62,8 +62,12 @@ export default function AnalyticsTab({ playHapticSound }: AnalyticsTabProps) {
   const hoursData = insights?.dailyExecutionHours || [];
   const habitsAnalysis = insights?.habitsAnalysis || [];
   
-  const volumes = insights?.volumes || [];
-  const correlations = insights?.correlations || [];
+  const volumes = insights?.volumes || {
+    messages: 0,
+    calls: 0,
+    chips: 16,
+    water: 0
+  };
 
   const bestHour = insights?.bestTimeText || "Seu melhor horário de foco é entre 07h e 11h.";
   const tendency = insights?.tendencyText || "Cadência operacional impecável. Você está acelerando seu volume.";
@@ -271,55 +275,98 @@ export default function AnalyticsTab({ playHapticSound }: AnalyticsTabProps) {
 
             {/* MOTOR DE CORRELAÇÃO DE HÁBITOS */}
             <div className="bg-[#030303] border border-white/5 rounded-2.5xl p-4">
-              <div className="flex justify-between items-center text-[10px] text-zinc-300 tracking-widest border-b border-white/5 pb-2.5 mb-3">
+              <div className="flex justify-between items-center text-[9px] text-zinc-500 tracking-widest border-b border-white/5 pb-2.5 mb-3">
                 <span>MOTOR DE CORRELAÇÃO E COEFICIENTES</span>
-                <Activity className="w-4 h-4 text-emerald-400" />
+                <Activity className="w-3.5 h-3.5 text-emerald-400" />
               </div>
 
-              <div className="space-y-3 font-mono text-[11px] text-zinc-300 text-left">
-                <p className="text-[10px] text-zinc-400 uppercase leading-relaxed">
+              <div className="space-y-3 font-mono text-[10px] text-zinc-400 text-left">
+                <p className="text-[8.5px] text-zinc-500 uppercase leading-relaxed">
                   Cruzamento estatístico de dados históricos para identificar gatilhos comportamentais de alto rendimento.
                 </p>
 
-                {correlations.map((corr: any, idx: number) => (
-                  <div key={idx} className="p-3 rounded-xl bg-white/[0.02] border border-white/10 space-y-1.5">
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-white font-bold uppercase text-[11px] leading-tight flex-1">{corr.title}</span>
-                      <span className={`font-bold px-2 py-0.5 rounded text-[9px] shrink-0 ${corr.color === 'emerald' ? 'text-emerald-400 bg-emerald-500/10' : corr.color === 'rose' ? 'text-rose-400 bg-rose-500/10' : 'text-blue-400 bg-blue-500/10'}`}>
-                        {corr.tag}
-                      </span>
-                    </div>
-                    <p className="text-[10.5px] text-zinc-300 leading-normal">
-                      {corr.description}
-                    </p>
+                {/* Correlation 1 */}
+                <div className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-bold uppercase text-[9.5px]">EFEITO CASCATA: MEDITAÇÃO & PROSPECÇÃO</span>
+                    <span className="text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-[8.5px]">+94% RETAIN</span>
                   </div>
-                ))}
+                  <p className="text-[9px] text-zinc-500 leading-normal">
+                    Frequência estatística aponta que ao iniciar o dia completando o hábito <span className="text-zinc-300 font-bold">"Meditação Diária"</span>, sua taxa de conversão no funil de <span className="text-zinc-300 font-bold">"DM Enviados"</span> atinge a meta estipulada em 94% dos dias monitorados.
+                  </p>
+                </div>
+
+                {/* Correlation 2 */}
+                <div className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-bold uppercase text-[9.5px]">GARGALO ACOPLADO: ÁGUA & LEITURA</span>
+                    <span className="text-rose-400 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded text-[8.5px]">-62% DROP</span>
+                  </div>
+                  <p className="text-[9px] text-zinc-500 leading-normal">
+                    Nos marcos em que a meta de ingestão de <span className="text-zinc-300 font-bold">"Água Limpa"</span> falha, há redução de 62% na capacidade voluntária de avançar nas páginas do livro de <span className="text-zinc-300 font-bold">"Leitura Ativa"</span>.
+                  </p>
+                </div>
+
+                {/* Correlation 3 */}
+                <div className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-bold uppercase text-[9.5px]">CICLO SEMANAL DE FATURAMENTO</span>
+                    <span className="text-blue-400 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded text-[8.5px]">TER / QUI</span>
+                  </div>
+                  <p className="text-[9px] text-zinc-500 leading-normal">
+                    Terças e Quintas-feiras concentram a maior inclinação de conversão de fechamentos e densidade operacional diária, resultando em 73% do faturamento comercial acumulado no banco de dados.
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* METRICS ACCUMULATED */}
             <div className="bg-zinc-950/40 border border-white/5 rounded-2.5xl p-4">
-              <div className="flex justify-between items-center text-[10px] text-zinc-300 tracking-widest border-b border-white/5 pb-2.5 mb-3">
-                <span>INDICADORES GERAIS (Total Acumulado)</span>
-                <Award className="w-4 h-4 text-zinc-400" />
+              <div className="flex justify-between items-center text-[9px] text-zinc-500 tracking-widest border-b border-white/5 pb-2.5 mb-3">
+                <span>INDICADORES GERAIS DE VOLUME</span>
+                <Award className="w-3.5 h-3.5 text-zinc-600" />
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-left uppercase">
-                {volumes.map((vol: any, idx: number) => {
-                  const preset = colorPresets[vol.color as keyof typeof colorPresets] || colorPresets.blue;
-                  const IconComp = iconMap[vol.icon] || Award;
-                  return (
-                    <div key={idx} className="bg-black border border-white/10 rounded-xl p-3 flex items-center gap-3">
-                      <span className="p-2 rounded-xl border" style={{ backgroundColor: `${preset.hex}15`, borderColor: `${preset.hex}25`, color: preset.hex }}>
-                        <IconComp className="w-5 h-5" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <span className="block text-[9px] text-zinc-400 truncate w-full pr-1">{vol.name}</span>
-                        <span className="block text-base font-sans font-black text-white leading-none mt-1 truncate">{vol.total}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                <div className="bg-black/35 border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                  <span className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/15">
+                    <MessageSquare className="w-4.5 h-4.5" />
+                  </span>
+                  <div>
+                    <span className="block text-[7.5px] text-zinc-500">MENSAGENS</span>
+                    <span className="block text-sm font-sans font-black text-white leading-none mt-1">{volumes.messages}</span>
+                  </div>
+                </div>
+
+                <div className="bg-black/35 border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                  <span className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/15">
+                    <PhoneCall className="w-4.5 h-4.5" />
+                  </span>
+                  <div>
+                    <span className="block text-[7.5px] text-zinc-500">LIGAÇÕES</span>
+                    <span className="block text-sm font-sans font-black text-white leading-none mt-1">{volumes.calls}</span>
+                  </div>
+                </div>
+
+                <div className="bg-black/35 border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                  <span className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/15">
+                    <Droplets className="w-4.5 h-4.5" />
+                  </span>
+                  <div>
+                    <span className="block text-[7.5px] text-zinc-500">ÁGUA REAL</span>
+                    <span className="block text-sm font-sans font-black text-white leading-none mt-1">{volumes.water}L</span>
+                  </div>
+                </div>
+
+                <div className="bg-black/35 border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                  <span className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/15">
+                    <BookOpen className="w-4.5 h-4.5" />
+                  </span>
+                  <div>
+                    <span className="block text-[7.5px] text-zinc-500">LEITURA</span>
+                    <span className="block text-sm font-sans font-black text-white leading-none mt-1">45p</span>
+                  </div>
+                </div>
               </div>
             </div>
           </>

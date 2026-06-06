@@ -25,6 +25,7 @@ interface HojeTabProps {
     currentValue: number,
     completed?: boolean,
     todayPhoto?: string,
+    fullHabitUpdate?: Partial<Habit>
   ) => void;
   onSelectHabit: (habit: Habit) => void;
   playHapticSound: (type: "tick" | "complete" | "reset" | "warguerra") => void;
@@ -760,7 +761,7 @@ export default function HojeTab({
                     {habit.name}
                   </h3>
                   <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
-                    {habit.category}
+                    {habit.category} {habit.timeOfDay && <span className="ml-1 px-1 bg-white/10 rounded">@ {habit.timeOfDay}</span>}
                   </p>
                 </div>
                 <div className="z-10 mt-auto">
@@ -845,7 +846,7 @@ export default function HojeTab({
                         </div>
                         <div>
                           <div className="text-[9px] text-zinc-400 font-mono tracking-widest uppercase mb-1">
-                            {habit.category}
+                            {habit.category} {habit.timeOfDay && <span className="ml-1 px-1.5 py-0.5 bg-white/10 rounded-md">@ {habit.timeOfDay}</span>}
                           </div>
                           <h2
                             className={`text-3xl font-display font-black tracking-tight leading-none ${habit.completed ? "text-zinc-600 line-through" : "text-white"}`}

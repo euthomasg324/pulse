@@ -53,6 +53,7 @@ export default function HabitosTab({
   const [newHabitInterval, setNewHabitInterval] = useState<number>(1);
   const [newHabitColor, setNewHabitColor] = useState<string>("blue");
   const [newHabitIcon, setNewHabitIcon] = useState<string>("Zap");
+  const [newHabitHasTime, setNewHabitHasTime] = useState<boolean>(false);
   const [newHabitTime, setNewHabitTime] = useState<string>("08:00");
   const [newHabitCategory, setNewHabitCategory] = useState<string>("Execução");
   const [newHabitExigencia, setNewHabitExigencia] = useState<string>("Moderado");
@@ -107,7 +108,7 @@ export default function HabitosTab({
       frequencyInterval: newHabitFrequency === 'every-x-days' ? newHabitInterval : undefined,
       color: newHabitColor,
       icon: newHabitIcon,
-      timeOfDay: newHabitTime,
+      timeOfDay: newHabitHasTime ? newHabitTime : undefined,
       category: newHabitCategory,
       exigencia: newHabitExigencia as any,
       connectedMacroId: newHabitConnectedMacroId,
@@ -392,14 +393,28 @@ export default function HabitosTab({
                   </select>
 
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div>
-                      <label className="block text-[8px] text-zinc-500 mb-1">HORÁRIO ALVO</label>
-                      <input
-                        type="time"
-                        value={newHabitTime}
-                        onChange={(e) => setNewHabitTime(e.target.value)}
-                        className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-xs uppercase font-mono tracking-wider focus:outline-none text-zinc-300"
-                      />
+                    <div className="flex flex-col gap-1.5">
+                      <label className="flex items-center gap-2 text-[8px] text-zinc-500 font-mono">
+                        <input 
+                          type="checkbox" 
+                          checked={newHabitHasTime} 
+                          onChange={(e) => { playHapticSound('tick'); setNewHabitHasTime(e.target.checked); }}
+                          className="accent-emerald-500"
+                        />
+                        POSSUI HORÁRIO?
+                      </label>
+                      {newHabitHasTime ? (
+                        <input
+                          type="time"
+                          value={newHabitTime}
+                          onChange={(e) => setNewHabitTime(e.target.value)}
+                          className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-xs uppercase font-mono tracking-wider focus:outline-none text-zinc-300"
+                        />
+                      ) : (
+                        <div className="w-full bg-zinc-900/50 border border-white/5 rounded-xl p-2 text-xs uppercase font-mono tracking-wider text-zinc-600 flex items-center h-[34px]">
+                          LIVRE
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-[8px] text-zinc-500 mb-1 font-mono">CATEGORIA</label>

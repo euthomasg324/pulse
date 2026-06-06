@@ -92,12 +92,12 @@ html, body, #root {
 }
 
 .pb-safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 8px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (display-mode: standalone) {
   .pb-safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    padding-bottom: 12px !important;
   }
 }
 

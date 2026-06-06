@@ -61,13 +61,15 @@ interface DBState {
   habit_logs: any[];
   timeline: any[];
   notifications: any[];
+  kv_store: { [key: string]: string };
 }
 
 let jsonDb: DBState = {
   habits: [],
   habit_logs: [],
   timeline: [],
-  notifications: []
+  notifications: [],
+  kv_store: {}
 };
 
 const saveJsonDb = () => {
@@ -87,7 +89,8 @@ const loadJsonDb = () => {
         habits: [],
         habit_logs: [],
         timeline: [],
-        notifications: []
+        notifications: [],
+        kv_store: {}
       };
       saveJsonDb();
     }
@@ -96,13 +99,15 @@ const loadJsonDb = () => {
     if (!jsonDb.habit_logs) jsonDb.habit_logs = [];
     if (!jsonDb.timeline) jsonDb.timeline = [];
     if (!jsonDb.notifications) jsonDb.notifications = [];
+    if (!jsonDb.kv_store) jsonDb.kv_store = {};
   } catch (err) {
     console.error("Failed loading database, initializing empty:", err);
     jsonDb = {
       habits: [],
       habit_logs: [],
       timeline: [],
-      notifications: []
+      notifications: [],
+      kv_store: {}
     };
     saveJsonDb();
   }
@@ -169,6 +174,15 @@ function translateQuery(sql: string): string {
     `;
   }
 
+  if (translated.match(/INSERT OR REPLACE INTO kv_store/i)) {
+    translated = `
+      INSERT INTO kv_store (key, value)
+      VALUES ($1, $2)
+      ON CONFLICT (key) DO UPDATE 
+      SET value = EXCLUDED.value
+    `;
+  }
+
   translated = translated.replace(/as '([^']*)'/gi, 'as "$1"');
   return translated;
 }
@@ -202,6 +216,7 @@ const sqlRun = async (sql: string, params: any[] = []): Promise<any> => {
       else if (tableName === "habit_logs") jsonDb.habit_logs = [];
       else if (tableName === "timeline") jsonDb.timeline = [];
       else if (tableName === "notifications") jsonDb.notifications = [];
+      else if (tableName === "kv_store") jsonDb.kv_store = {};
       saveJsonDb();
     }
     return { changes: 1 };
@@ -272,6 +287,14 @@ const sqlRun = async (sql: string, params: any[] = []): Promise<any> => {
     jsonDb.notifications.push(item);
     saveJsonDb();
     return { changes: 1, lastID: id };
+  }
+
+  if (query.match(/INSERT OR REPLACE INTO kv_store/i)) {
+    const key = params[0];
+    const value = params[1];
+    jsonDb.kv_store[key] = value;
+    saveJsonDb();
+    return { changes: 1 };
   }
 
   if (query.match(/UPDATE habits/i)) {
@@ -415,6 +438,12 @@ const sqlAll = async (sql: string, params: any[] = []): Promise<any[]> => {
       return res.slice(0, val);
     }
     return res;
+  }
+
+  if (query.match(/SELECT value FROM kv_store WHERE key = \?/i)) {
+    const key = params[0];
+    const val = jsonDb.kv_store[key];
+    return val !== undefined ? [{ value: val }] : [];
   }
 
   if (query.match(/SELECT h\.name as 'Hábito'/i)) {
@@ -754,6 +783,12 @@ async function initSqlite() {
       createdAt TEXT
     )
   `);
+  await sqlRun(`
+    CREATE TABLE IF NOT EXISTS kv_store (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
 }
 
 // Read entire DB state and sync into memory dbState mapping
@@ -891,6 +926,48 @@ app.get("/api/state", async (req, res) => {
   res.json(dbState);
 });
 
+// KV Store API
+app.get("/api/kv", async (req, res) => {
+  try {
+    const keys = ["pulse_visions_v4", "pulse_identity_characteristics_v1", "pulse_goals_v2"];
+    const kvData: Record<string, any> = {};
+    for (const k of keys) {
+      if (pool) { // Read from pg/sqlite
+        const row = await sqlAll(`SELECT value FROM kv_store WHERE key = ?`, [k]);
+        if (row && row.length > 0) {
+          kvData[k] = JSON.parse(row[0].value || row[0].Value || "null");
+        } else if (jsonDb.kv_store[k]) {
+          kvData[k] = JSON.parse(jsonDb.kv_store[k]);
+        }
+      } else {
+        if (jsonDb.kv_store[k]) {
+           kvData[k] = JSON.parse(jsonDb.kv_store[k]);
+        }
+      }
+    }
+    res.json(kvData);
+  } catch (err) {
+    res.status(500).json({ error: "Falha ao ler dados kv." });
+  }
+});
+
+app.post("/api/kv", async (req, res) => {
+  try {
+    const { key, value } = req.body;
+    if (!key || typeof value === "undefined") {
+      return res.status(400).json({ error: "key and value obliged" });
+    }
+    const valStr = JSON.stringify(value);
+    await sqlRun(`
+      INSERT OR REPLACE INTO kv_store (key, value)
+      VALUES (?, ?)
+    `, [key, valStr]);
+    res.json({ success: true, key });
+  } catch(err) {
+    res.status(500).json({ error: "Falha ao gravar kv_store" });
+  }
+});
+
 // Restore database factory settings (Clear absolute SQLite tables)
 app.post("/api/reset-db", async (req, res) => {
   try {
@@ -1019,7 +1096,7 @@ app.delete("/api/habits/:id", async (req, res) => {
 app.put("/api/habits/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const { currentValue, completed, resultOutcome, todayPhoto } = req.body;
+    const { currentValue, completed, resultOutcome, todayPhoto, timeOfDay } = req.body;
 
     const habitMemory = dbState.habits.find(h => h.id === id);
     if (!habitMemory) {
@@ -1030,6 +1107,8 @@ app.put("/api/habits/:id", async (req, res) => {
     let nextComp = completed !== undefined ? (completed ? 1 : 0) : (habitMemory.completed ? 1 : 0);
     const nextOutcome = resultOutcome !== undefined ? resultOutcome : habitMemory.resultOutcome || '';
     const nextPhoto = todayPhoto !== undefined ? todayPhoto : habitMemory.todayPhoto || '';
+    // Use the undefined check so we can clear it by sending null or empty string, or pass the existing
+    const nextTimeOfDay = timeOfDay !== undefined ? timeOfDay : habitMemory.timeOfDay || null;
 
     // Auto complete checks triggers if currentValue changed
     if (currentValue !== undefined) {
@@ -1052,9 +1131,9 @@ app.put("/api/habits/:id", async (req, res) => {
     // Save unified database state representation
     await sqlRun(`
       UPDATE habits
-      SET currentValue = ?, completed = ?, resultOutcome = ?, todayPhoto = ?
+      SET currentValue = ?, completed = ?, resultOutcome = ?, todayPhoto = ?, timeOfDay = ?
       WHERE id = ?
-    `, [nextVal, nextComp, nextOutcome, nextPhoto, id]);
+    `, [nextVal, nextComp, nextOutcome, nextPhoto, nextTimeOfDay, id]);
 
     // Insert live logs update for today's snapshot as well so we look consistent in real-time
     const todayStr = new Date().toISOString().split('T')[0];
@@ -1128,7 +1207,9 @@ app.get("/api/report", async (req, res) => {
 });
 
 // Dynamic quotes and strategic insights using Gemini or intelligent stoic fallback
-app.get("/api/insights", async (req, res) => {
+app.post("/api/insights", async (req, res) => {
+  const { visions = [], characteristics = [], goals = [] } = req.body || {};
+
   // 1. Calculate operational score
   const totalDailyHabits = dbState.habits.length;
   const completedDailyHabits = dbState.habits.filter(h => h.completed).length;
@@ -1230,12 +1311,17 @@ app.get("/api/insights", async (req, res) => {
   // If Gemini Core is connected, query server-side safely to obtain amazing stoic execution guidance!
   if (ai) {
     try {
-      const prompt = `Você é o comandante de um sistema operacional de execução diária pessoal chamado Pulse.
-Analise os resultados do usuário hoje: ele concluiu ${completedDailyHabits} de um total de ${totalDailyHabits} hábitos diários (score de ${todayScore}%).
-As mensagens enviadas hoje foram ${dbState.habits.find(h => h.id === "h-mensagens")?.currentValue || 0}, ligações realizadas: ${dbState.habits.find(h => h.id === "h-ligacoes")?.currentValue || 0}.
+      const paraisoStr = visions.filter((v:any) => v.category === 'paraiso').map((v:any) => v.text).join(", ") || "Ter sucesso";
+      const infernoStr = visions.filter((v:any) => v.category === 'inferno').map((v:any) => v.text).join(", ") || "Fracassar";
 
-Escreva uma ÚNICA frase operacional ultra-curta, militar, sem rodeios, sem emojis ou afetações de autoajuda infantil. Ela deve inspirar foco implacável e ação direta.
-Frase com no máximo 14 palavras. Escreva no formato:
+      const prompt = `Você é o comandante do Pulse.
+O Paraíso do usuário é: [${paraisoStr}].
+O Inferno do usuário é: [${infernoStr}].
+
+Hoje, ele concluiu ${completedDailyHabits} de um total de ${totalDailyHabits} hábitos diários (Aproveitamento de ${todayScore}%).
+
+Escreva uma ÚNICA frase operacional ultra-curta, estoica, militar, sem rodeios ou emojis. Use a performance exata de hoje e os termos reais do Paraiso ou Inferno do usuário que eu te passei acima. Reforce agressivamente a conexão entre a disciplina diária e o destino que ele escolheu na Bússola.
+Frase com no máximo 20 palavras. Escreva no formato:
 "FRASE: <frase_aqui>"`;
 
       const response = await ai.models.generateContent({
@@ -1316,73 +1402,17 @@ Frase com no máximo 14 palavras. Escreva no formato:
     count: hourMap[hour]
   })).sort((a,b) => a.hour.localeCompare(b.hour));
 
-  let quantVolumes = dbState.habits
-    .filter(h => h.type === 'quantitative' || h.type === 'accumulative')
-    .map(h => {
-      let total = h.currentValue;
-      h.logs.forEach(l => { total += l.value; });
-      return { id: h.id, name: h.name, icon: h.icon, total: total, color: h.color };
-    })
-    .sort((a,b) => b.total - a.total)
-    .slice(0, 4);
-
-  if (quantVolumes.length < 4) {
-      const topChecks = dbState.habits
-        .filter(h => h.type === 'check')
-        .map(h => {
-            let total = h.completed ? 1 : 0;
-            h.logs.forEach(l => { total += l.completed ? 1 : 0; });
-            return { id: h.id, name: h.name, icon: h.icon, total, color: h.color };
-        })
-        .sort((a,b) => b.total - a.total)
-        .slice(0, 4 - quantVolumes.length);
-      quantVolumes = [...quantVolumes, ...topChecks];
-  }
-
-  const sortedHabits = [...habitsAnalysis].sort((a,b) => b.completionRate - a.completionRate);
-  const bestHabit = sortedHabits[0];
-  const worstHabit = sortedHabits[sortedHabits.length - 1];
-  
-  let correlationEngine = [];
-  if (bestHabit && bestHabit.completionRate > 0) {
-      correlationEngine.push({
-          title: `EFEITO CASCATA: ${bestHabit.name}`,
-          tag: `+${bestHabit.completionRate}% RETAIN`,
-          color: "emerald",
-          description: `Estatística aponta que ao manter disciplina em "${bestHabit.name}", sua capacidade geral de conclusão de sistema operacional aumenta exponencialmente.`
-      });
-  } else {
-      correlationEngine.push({
-          title: `COLETA DE DADOS EM ANDAMENTO`,
-          tag: `AGUARDANDO`,
-          color: "blue",
-          description: `Motor de busca aguardando amostragem estatística suficiente para correlação positiva.`
-      });
-  }
-
-  if (worstHabit && worstHabit.completionRate < 100 && worstHabit.completionRate >= 0) {
-      correlationEngine.push({
-           title: `GARGALO ACOPLADO: ${worstHabit.name}`,
-           tag: `-${100 - worstHabit.completionRate}% DROP`,
-           color: "rose",
-           description: `Nos dias em que a meta de "${worstHabit.name}" falha, há fragmentação visível na integridade geral do seu rendimento diário.`
-      });
-  } else {
-      correlationEngine.push({
-           title: `SISTEMA ÍNTEGRO`,
-           tag: `100% HOLD`,
-           color: "emerald",
-           description: `Bateria operacional perfeita. Nenhuma falha recorrente crítica detectada.`
-      });
-  }
-
   res.json({
     score: {
       today: todayScore,
       week: weekScore
     },
-    volumes: quantVolumes,
-    correlations: correlationEngine,
+    volumes: {
+      messages: totalMsgs,
+      calls: totalCalls,
+      chips: 0,
+      water: Number(waterLiters.toFixed(1))
+    },
     streakDays,
     weeklyTrend,
     dailyExecutionHours,

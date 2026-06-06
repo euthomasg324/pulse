@@ -159,7 +159,15 @@ export default function App() {
   // Load dynamic stoc phrases and quotes from insights
   const loadInsights = async () => {
     try {
-      const response = await fetch("/api/insights");
+      const visions = JSON.parse(localStorage.getItem("pulse_visions_v4") || "[]");
+      const characteristics = JSON.parse(localStorage.getItem("pulse_identity_characteristics_v1") || "[]");
+      const goals = JSON.parse(localStorage.getItem("pulse_goals_v2") || "[]");
+
+      const response = await fetch("/api/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visions, characteristics, goals })
+      });
       const data = await response.json();
       if (data.dynamicPhrase) {
         setDynamicPhrase(data.dynamicPhrase);
@@ -175,7 +183,7 @@ export default function App() {
   }, []);
 
   // Update single habit values directly
-  const handleUpdateHabit = async (id: string, currentValue: number, completed = false, todayPhoto?: string) => {
+  const handleUpdateHabit = async (id: string, currentValue: number, completed = false, todayPhoto?: string, fullHabitUpdate?: Partial<Habit>) => {
     // Keep reference to previous habits for optimistic rollback in case of network failures
     const previousHabits = [...habits];
 
@@ -189,10 +197,35 @@ export default function App() {
       // Optimistically update the primary habit list state instantly
       setHabits(prev => prev.map(h => {
         if (h.id === id) {
-          const updated = { ...h, currentValue, completed };
+          const updated = { ...h, currentValue, completed, ...(fullHabitUpdate || {}) };
           if (todayPhoto !== undefined) {
             updated.todayPhoto = todayPhoto;
           }
+
+          // Intelligence: If completed, and we have a connectedTraitId, we level up the Identity System automatically!
+          if (completed && updated.connectedTraitId) {
+            try {
+              const charsRaw = localStorage.getItem("pulse_identity_characteristics_v1");
+              if (charsRaw) {
+                const chars = JSON.parse(charsRaw);
+                let updatedChars = false;
+                for (const c of chars) {
+                  for (const p of c.pairs) {
+                    if (p.id === updated.connectedTraitId) {
+                      p.balance = Math.min(100, Math.max(0, p.balance + 5)); // Increase towards positive behavior!
+                      updatedChars = true;
+                    }
+                  }
+                }
+                if (updatedChars) {
+                  localStorage.setItem("pulse_identity_characteristics_v1", JSON.stringify(chars));
+                  // Fire to backend sync
+                  fetch("/api/kv", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "pulse_identity_characteristics_v1", value: chars }) }).catch(()=>{});
+                }
+              }
+            } catch (e) {}
+          }
+
           return updated;
         }
         return h;
@@ -200,13 +233,13 @@ export default function App() {
 
       // If active overlay/modal is open, sync details instantly too
       if (selectedHabit && selectedHabit.id === id) {
-        setSelectedHabit(prev => prev ? { ...prev, currentValue, completed, todayPhoto: todayPhoto !== undefined ? todayPhoto : prev.todayPhoto } : null);
+        setSelectedHabit(prev => prev ? { ...prev, currentValue, completed, todayPhoto: todayPhoto !== undefined ? todayPhoto : prev.todayPhoto, ...(fullHabitUpdate || {}) } : null);
       }
 
       const response = await fetch(`/api/habits/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentValue, completed, todayPhoto })
+        body: JSON.stringify({ currentValue, completed, todayPhoto, ...(fullHabitUpdate || {}) })
       });
       
       const data = await response.json();
