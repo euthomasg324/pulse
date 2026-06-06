@@ -13,6 +13,10 @@ import {
   Plus,
   Camera,
   X,
+  Play,
+  Pause,
+  RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import { iconMap, colorPresets } from "../data";
 import { motion, AnimatePresence } from "motion/react";
@@ -86,6 +90,54 @@ export default function HojeTab({
   const [viewMode, setViewMode] = useState<"grid" | "focus">("focus");
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const touchTimer = useRef<any>(null);
+
+  const [activeMantraIndex, setActiveMantraIndex] = useState(0);
+  const [isMantraOpen, setIsMantraOpen] = useState(false);
+  const [mantraCompleted, setMantraCompleted] = useState(false);
+  const [mantraAutoPlay, setMantraAutoPlay] = useState(true);
+  const [mantraSpeed, setMantraSpeed] = useState<"lento" | "normal" | "rapido">("normal");
+
+  const MANTRA_LINES = [
+    "Minha mente é clara.",
+    "Meu corpo é forte.",
+    "Minha presença gera valor.",
+    "Eu atraio oportunidades porque eu ajo sobre elas.",
+    "Dinheiro circula para quem resolve problemas — e eu resolvo problemas.",
+    "Todos os dias eu me torno mais disciplinado, estratégico e poderoso.",
+    "Eu não opero na escassez.",
+    "Eu penso grande, ajo rápido e aprendo mais rápido ainda.",
+    "As pessoas certas me encontram porque eu me movimento.",
+    "Minha vida está entrando em expansão.",
+    "Eu aceito abundância sem culpa.",
+    "Eu transformo ideias em riqueza.",
+    "Eu construo algo grande.",
+    "Eu termino o que começo.",
+    "Hoje eu avanço."
+  ];
+
+  useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const saved = localStorage.getItem(`pulse_mantra_completed_${todayStr}`);
+    if (saved) setMantraCompleted(true);
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isMantraOpen && mantraAutoPlay) {
+      const delay = mantraSpeed === "lento" ? 5000 : mantraSpeed === "rapido" ? 2000 : 3200;
+      interval = setInterval(() => {
+        playHapticSound("tick");
+        setActiveMantraIndex(i => {
+          if (i >= MANTRA_LINES.length - 1) {
+            setMantraAutoPlay(false);
+            return i;
+          }
+          return i + 1;
+        });
+      }, delay);
+    }
+    return () => clearInterval(interval);
+  }, [isMantraOpen, mantraAutoPlay, mantraSpeed]);
 
   const [funnels, setFunnels] = useState<{
     [habitId: string]: {
@@ -198,6 +250,14 @@ export default function HojeTab({
       if (a.completed !== b.completed) {
         return a.completed ? 1 : -1;
       }
+      const timeA = a.timeOfDay;
+      const timeB = b.timeOfDay;
+      if (timeA && timeB) {
+        return timeA.localeCompare(timeB);
+      }
+      if (timeA) return -1;
+      if (timeB) return 1;
+
       const priorityWeight = { high: 3, medium: 2, low: 1 };
       const priorityDiff =
         priorityWeight[b.priority] - priorityWeight[a.priority];
@@ -698,6 +758,44 @@ export default function HojeTab({
         </div>
       </div>
 
+      {/* GLOWING AMBER DAILY MANTRA ACTION STRIP */}
+      <div className="px-3 md:px-4 mb-3 shrink-0">
+        <motion.div 
+          onClick={() => { 
+            playHapticSound("tick"); 
+            setActiveMantraIndex(0);
+            setMantraAutoPlay(true);
+            setIsMantraOpen(true); 
+          }}
+          whileHover={{ scale: 1.01, borderColor: "rgba(245, 158, 11, 0.4)" }}
+          whileTap={{ scale: 0.99 }}
+          className={`cursor-pointer p-4 rounded-3xl border flex items-center justify-between transition-all duration-300 relative overflow-hidden backdrop-blur-3xl ${
+            mantraCompleted 
+              ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' 
+              : 'bg-amber-500/5 border-amber-900/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.05)]'
+          }`}
+        >
+          {/* Subtle radiating glowing circles */}
+          <div className="absolute -inset-10 opacity-20 bg-[radial-gradient(circle_at_center,var(--color-amber-500)_0%,transparent_50%)] pointer-events-none" />
+          <div className="flex items-center gap-3.5 relative z-10">
+            <span className={`text-xl transition-transform duration-300 ${mantraCompleted ? '' : 'animate-bounce'}`}>🔮</span>
+            <div>
+              <div className="text-[9px] uppercase font-mono tracking-widest text-zinc-500 font-bold leading-none mb-1">REPROGRAMAÇÃO DIÁRIA</div>
+              <div className="text-sm font-semibold leading-none text-zinc-100 tracking-tight">
+                {mantraCompleted ? "Mantra Recitado. Presença forte e poder puro." : "Recitar Mantra do Dia (Teleprompter)"}
+              </div>
+            </div>
+          </div>
+          <span className={`text-[9px] font-mono font-black px-2.5 py-1 rounded-xl border uppercase shrink-0 transition-all ${
+            mantraCompleted 
+              ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-300 animate-pulse'
+          }`}>
+            {mantraCompleted ? "Alinhado" : "Falar"}
+          </span>
+        </motion.div>
+      </div>
+
       {viewMode === "grid" ? (
         /* GRID VIEW: Clean, modern, bento-style */
         <div className="flex-1 grid grid-cols-2 gap-3 min-h-0 overflow-y-auto px-1 pb-4 content-start">
@@ -938,6 +1036,195 @@ export default function HojeTab({
           `}</style>
         </div>
       )}
+
+      {/* IMMERSIVE MANTRA TELEPROMPTER OVERLAY */}
+      <AnimatePresence>
+        {isMantraOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col p-6 overflow-hidden"
+          >
+            {/* Header / Config Bar */}
+            <div className="flex flex-col gap-4 mb-6 relative z-10 shrink-0">
+              <div className="flex justify-between items-center whitespace-nowrap">
+                <div className="flex flex-col">
+                  <h2 className="text-xl font-display font-black text-amber-400 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+                    Teleprompter Mental
+                  </h2>
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+                    Ritmo de reprogramação ativa
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    playHapticSound("tick");
+                    setIsMantraOpen(false);
+                  }}
+                  className="p-3 bg-zinc-900 border border-white/5 rounded-full text-zinc-400 hover:text-white transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Controls Grid */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-zinc-900/40 border border-white/5 rounded-2xl">
+                {/* Autoplay toggle */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      playHapticSound("tick");
+                      setMantraAutoPlay(!mantraAutoPlay);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      mantraAutoPlay ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-black/40 text-zinc-500 border border-white/5"
+                    }`}
+                  >
+                    {mantraAutoPlay ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                    <span>{mantraAutoPlay ? "Auto-Scroll" : "Pausado"}</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      playHapticSound("reset");
+                      setActiveMantraIndex(0);
+                    }}
+                    className="p-2 bg-black/40 border border-white/5 text-zinc-400 hover:text-white rounded-xl transition"
+                    title="Reiniciar"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Speed buttons */}
+                <div className="flex bg-black/40 p-0.5 rounded-xl border border-white/5 shrink-0">
+                  {(["lento", "normal", "rapido"] as const).map(spd => (
+                    <button
+                      key={spd}
+                      onClick={() => {
+                        playHapticSound("tick");
+                        setMantraSpeed(spd);
+                      }}
+                      className={`px-2.5 py-1 text-[8px] font-mono uppercase tracking-widest rounded-lg transition-all ${
+                        mantraSpeed === spd ? "bg-white text-black font-extrabold" : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      {spd}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Immersive Scroll Center */}
+            <div className="flex-1 flex flex-col justify-center relative overflow-hidden my-6">
+              {/* Overlay guides for focus area */}
+              <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black via-black/85 to-transparent pointer-events-none z-10" />
+              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none z-10" />
+              
+              {/* Highlight window border */}
+              <div className="absolute inset-x-0 h-24 border-y border-amber-500/10 bg-amber-500/[0.01] pointer-events-none z-0" />
+
+              <div className="relative h-[340px] flex items-center justify-center overflow-hidden">
+                <div 
+                  className="transition-all duration-700 ease-out flex flex-col items-center text-center space-y-0"
+                  style={{
+                    transform: `translateY(${(130 - activeMantraIndex * 84)}px)`
+                  }}
+                >
+                  {MANTRA_LINES.map((line, idx) => {
+                    const isActive = idx === activeMantraIndex;
+                    const distance = Math.abs(idx - activeMantraIndex);
+
+                    return (
+                      <motion.div
+                        key={idx}
+                        animate={{
+                          scale: isActive ? 1.08 : 0.85,
+                          opacity: isActive ? 1 : distance === 1 ? 0.35 : distance === 2 ? 0.12 : 0.02
+                        }}
+                        transition={{ duration: 0.4 }}
+                        onClick={() => {
+                          playHapticSound("tick");
+                          setActiveMantraIndex(idx);
+                        }}
+                        className={`cursor-pointer px-4 text-center flex items-center justify-center leading-tight tracking-tight transition-all h-[84px] select-none ${
+                          isActive 
+                            ? 'text-amber-300 font-extrabold text-xl md:text-2xl drop-shadow-[0_0_15px_rgba(245,158,11,0.25)]' 
+                            : 'text-zinc-500 font-medium text-sm md:text-base'
+                        }`}
+                        style={{ maxWidth: "480px" }}
+                      >
+                        {line}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Complete / Bottom Block */}
+            <div className="mt-auto shrink-0 flex flex-col gap-3 relative z-10">
+              <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 uppercase tracking-widest px-1">
+                <span>Passo {activeMantraIndex + 1} de {MANTRA_LINES.length}</span>
+                <span>{Math.round(((activeMantraIndex + 1) / MANTRA_LINES.length) * 100)}% concluído</span>
+              </div>
+              
+              <div className="w-full bg-zinc-900/40 border border-white/5 h-2 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-amber-500 transition-all duration-500"
+                  style={{ width: `${((activeMantraIndex + 1) / MANTRA_LINES.length) * 100}%` }}
+                />
+              </div>
+
+              {activeMantraIndex === MANTRA_LINES.length - 1 ? (
+                <button
+                  onClick={() => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    localStorage.setItem(`pulse_mantra_completed_${todayStr}`, "true");
+                    setMantraCompleted(true);
+                    setIsMantraOpen(false);
+                    playHapticSound("complete");
+
+                    // Register in BrainDump lists so user feels validated!
+                    const savedDumps = localStorage.getItem("pulse_braindumps");
+                    let dumps = savedDumps ? JSON.parse(savedDumps) : [];
+                    dumps.unshift({
+                      id: "mantra-" + Date.now().toString(),
+                      text: "🔮 MANTRA DIÁRIO RECITADO: \n[x] Minha mente é clara.\n[x] Meu corpo é forte.\n[x] Minha presença gera valor.\n[x] Eu atraio oportunidades porque eu ajo sobre elas.\n[x] Dinheiro circula para quem resolve problemas — e eu resolvo problemas.\n[x] Todos os dias eu me torno mais disciplinado, estratégico e poderoso.\n[x] Eu não opero na escassez.\n[x] Eu penso grande, ajo rápido e aprendo mais rápido ainda.\n[x] As pessoas certas me encontram porque eu me movimento.\n[x] Minha vida está entrando em expansão.\n[x] Eu aceito abundância sem culpa.\n[x] Eu transformo ideias em riqueza.\n[x] Eu construo algo grande.\n[x] Eu termino o que começo.\n[x] Hoje eu avanço.",
+                      createdAt: todayStr,
+                      completed: true,
+                      type: "checklist"
+                    });
+                    localStorage.setItem("pulse_braindumps", JSON.stringify(dumps));
+                    fetch("/api/kv", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ key: "pulse_braindumps", value: dumps })
+                    }).catch(()=>{});
+                  }}
+                  className="w-full py-5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-black font-sans font-black text-base uppercase tracking-wider rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.25)] transition duration-300 active:scale-[0.98] flex items-center justify-center gap-2 text-center"
+                >
+                  <Check className="w-5 h-5 stroke-[3px]" />
+                  <span>Hoje Eu Avanço</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    playHapticSound("tick");
+                    setActiveMantraIndex(prev => Math.min(MANTRA_LINES.length - 1, prev + 1));
+                  }}
+                  className="w-full py-5 bg-white/10 hover:bg-white/20 text-white font-sans font-bold text-sm uppercase tracking-wider rounded-2xl transition duration-300 active:scale-[0.98]"
+                >
+                  Avançar Sentença
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* MODAL INPUT BRAIN DUMP */}
       <InputCaptureModal

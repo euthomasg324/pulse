@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   X,
@@ -9,7 +9,10 @@ import {
   Send,
   Loader2,
   Archive,
-  ArrowLeft
+  ArrowLeft,
+  Play,
+  Square,
+  Trash2
 } from "lucide-react";
 
 interface InputCaptureModalProps {
@@ -26,6 +29,8 @@ interface BrainDump {
   createdAt: string;
   completed: boolean;
   type: "nota" | "tarefa" | "checklist" | "audio";
+  items?: { id: string; text: string; completed: boolean }[];
+  voiceUrl?: string;
 }
 
 export default function InputCaptureModal({
@@ -45,6 +50,10 @@ export default function InputCaptureModal({
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   
+  const [audioBase64, setAudioBase64] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const [brainDumps, setBrainDumps] = useState<BrainDump[]>([]);
 
   useEffect(() => {
@@ -99,6 +108,8 @@ export default function InputCaptureModal({
       createdAt: new Date().toISOString().split("T")[0],
       completed: false,
       type: activeTab,
+      items: activeTab === "checklist" ? checklistItems : undefined,
+      voiceUrl: activeTab === "audio" && audioBase64 ? audioBase64 : undefined
     };
     
     const updatedDumps = [newDump, ...brainDumps];
@@ -117,15 +128,59 @@ export default function InputCaptureModal({
       setChecklistItems([]);
       setRecordingTime(0);
       setIsRecording(false);
+      setAudioBase64(null);
       playHapticSound("complete");
       onClose(); // Optional: or we just show a toast and keep open? Let's close as requested originally but state it is saved.
     }, 600);
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setAudioBase64(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+        
+        // Stop stream tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+    } catch (err) {
+      console.error("Erro ao acessar microfone", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  };
 
   const toggleRecord = () => {
     playHapticSound("tick");
-    setIsRecording(!isRecording);
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
   return (
@@ -396,23 +451,110 @@ export default function InputCaptureModal({
                     ) : (
                       brainDumps.filter(d => registryFilter === "todos" || d.type === registryFilter || (registryFilter === "tarefa" && d.type === "checklist")).map(dump => {
                         const isExpanded = expandedId === dump.id;
+                        
+                        // Parse back checklist items if saved as items array, or fallback parsing text
+                        const getItems = () => {
+                          if (dump.items && dump.items.length > 0) return dump.items;
+                          if (dump.type === "checklist" || dump.text.includes("[ ]") || dump.text.includes("[x]")) {
+                            return dump.text.split("\n").filter(Boolean).map((line, idx) => {
+                              const completed = line.trim().startsWith("[x]");
+                              const rawText = line.replace(/^\[[ x]\]/, "").trim();
+                              return { id: `item-${idx}`, text: rawText, completed };
+                            });
+                          }
+                          return null;
+                        };
+                        const listItems = getItems();
+
+                        const handleItemToggle = (itemId: string, e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          playHapticSound("tick");
+                          const currentItems = listItems || [];
+                          const updatedItems = currentItems.map(item => item.id === itemId ? { ...item, completed: !item.completed } : item);
+                          const allDone = updatedItems.every(i => i.completed);
+                          const textPayload = updatedItems.map(i => `${i.completed ? "[x]" : "[ ]"} ${i.text}`).join("\n");
+                          
+                          setBrainDumps(prev => {
+                            const changed = prev.map(d => d.id === dump.id ? { ...d, items: updatedItems, text: textPayload, completed: allDone } : d);
+                            localStorage.setItem("pulse_braindumps", JSON.stringify(changed));
+                            fetch("/api/kv", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ key: "pulse_braindumps", value: changed })
+                            }).catch(() => {});
+                            return changed;
+                          });
+                        };
+
+                        const handleDumpDeleteLocal = (e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          playHapticSound("reset");
+                          setBrainDumps(prev => {
+                            const changed = prev.filter(d => d.id !== dump.id);
+                            localStorage.setItem("pulse_braindumps", JSON.stringify(changed));
+                            fetch("/api/kv", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ key: "pulse_braindumps", value: changed })
+                            }).catch(() => {});
+                            return changed;
+                          });
+                        };
+
                         return (
                           <div 
                             key={dump.id} 
                             onClick={() => { playHapticSound("tick"); setExpandedId(isExpanded ? null : dump.id); }}
                             className="p-4 bg-zinc-900 border border-white/5 rounded-2xl relative cursor-pointer hover:bg-zinc-800 transition-colors"
                           >
-                            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2 flex justify-between">
+                            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2 flex justify-between items-center bg-black/25 -mx-4 -mt-4 px-4 py-2 rounded-t-2xl border-b border-white/5">
                               <div className="flex gap-2 items-center">
                                 <span className="opacity-50">{dump.createdAt}</span>
                                 <span className="px-1.5 py-0.5 rounded bg-white/5 text-[8px]">{dump.type || 'nota'}</span>
                               </div>
-                              {dump.completed && <span className="text-emerald-500">Concluído</span>}
+                              <div className="flex items-center gap-2">
+                                {dump.completed && <span className="text-emerald-500 font-bold">Concluído</span>}
+                                <button 
+                                  onClick={handleDumpDeleteLocal}
+                                  className="text-zinc-600 hover:text-red-400 p-1 rounded hover:bg-white/5 transition"
+                                  title="Excluir Registro"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                            <div className={`text-sm text-zinc-300 font-medium ${dump.completed ? 'line-through opacity-50' : ''} ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>
-                              {dump.text}
-                            </div>
-                            {!isExpanded && dump.text.length > 80 && (
+                            
+                            {listItems ? (
+                              /* RENDER PREMIUM CHECKLIST IN CARD */
+                              <div className="space-y-2 mt-2">
+                                {listItems.map(item => (
+                                  <div 
+                                    key={item.id} 
+                                    onClick={(e) => handleItemToggle(item.id, e)} 
+                                    className="flex items-center gap-2 p-1.5 bg-black/30 border border-white/5 rounded-xl hover:bg-black/60 transition"
+                                  >
+                                    <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${item.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-zinc-700'}`}>
+                                      {item.completed && <CheckSquare className="w-3 h-3" />}
+                                    </div>
+                                    <span className={`text-[12px] font-medium leading-none ${item.completed ? 'line-through text-zinc-600' : 'text-zinc-200'}`}>
+                                      {item.text}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              /* NORMAL TEXT */
+                              <div className={`text-sm text-zinc-300 font-medium ${dump.completed ? 'line-through opacity-50' : ''} ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>
+                                {dump.text}
+                              </div>
+                            )}
+
+                            {/* VOICE Memo Player rendering */}
+                            {dump.type === "audio" && dump.voiceUrl && (
+                              <VoicePlayer voiceUrl={dump.voiceUrl} playHapticSound={playHapticSound} />
+                            )}
+
+                            {!isExpanded && !listItems && dump.text.length > 80 && (
                                <div className="text-[10px] text-zinc-500 mt-2 font-mono">Toque para expandir</div>
                             )}
                           </div>
@@ -427,5 +569,76 @@ export default function InputCaptureModal({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function VoicePlayer({ voiceUrl, playHapticSound }: { voiceUrl: string; playHapticSound: any }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playHapticSound("tick");
+    
+    if (!audioRef.current) {
+      audioRef.current = new Audio(voiceUrl);
+      audioRef.current.onended = () => {
+        setIsPlaying(false);
+        playHapticSound("complete");
+      };
+    }
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error("Playback failed", err);
+      });
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 bg-zinc-800/80 p-3 rounded-xl border border-white/5 mt-3 relative" onClick={e => e.stopPropagation()}>
+      <button 
+        onClick={togglePlay}
+        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isPlaying ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-emerald-400 border border-emerald-500/10 hover:bg-white/10'}`}
+      >
+        {isPlaying ? (
+          <div className="flex gap-0.5 items-end justify-center h-4 pb-0.5">
+            <span className="w-1 bg-current h-2 animate-pulse" />
+            <span className="w-1 bg-current h-3 animate-pulse duration-300" style={{ animationDelay: '100ms' }} />
+            <span className="w-1 bg-current h-1.5 animate-pulse duration-150" style={{ animationDelay: '200ms' }} />
+          </div>
+        ) : (
+          <Play className="w-4 h-4 translate-x-0.5" />
+        )}
+      </button>
+      <div className="flex-1">
+        <span className="text-[9px] uppercase font-mono text-zinc-500 block leading-none mb-1">MÉMÓRIA DE VOZ</span>
+        <div className="flex gap-0.5 mt-1.5 items-center h-3">
+          {Array.from({ length: 28 }).map((_, i) => (
+            <div 
+              key={i} 
+              className={`flex-1 rounded-sm transition-all duration-300 ${isPlaying ? 'bg-emerald-400/80' : 'bg-zinc-700'}`}
+              style={{
+                height: `${Math.sin(i * 0.4) * (isPlaying ? 12 : 3) + 5}px`,
+                opacity: isPlaying ? 1 : 0.4
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,10 @@
 {
   "name": "Remix: Pulse",
   "description": "Painel operacional de execução pessoal focado em disciplina, ritmo, cadência e consistência real.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
