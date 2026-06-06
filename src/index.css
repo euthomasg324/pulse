@@ -91,3 +91,13 @@ html, body, #root {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%);
 }
 
+.pb-safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
+}
+
+@media (display-mode: standalone) {
+  .pb-safe-bottom {
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 20px), 16px) !important;
+  }
+}
+

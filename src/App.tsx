@@ -506,7 +506,7 @@ export default function App() {
       </main>
 
       {/* 5. FIXED BOTTOM HORIZONTAL NAVIGATION FOOTER MENU */}
-      <footer id="app-footer" className="w-full shrink-0 bg-[#000000] border-t border-white/5 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] px-4 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+      <footer id="app-footer" className="w-full shrink-0 bg-[#000000] border-t border-white/5 pt-2 pb-safe-bottom px-4 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
         <div className="max-w-lg mx-auto flex justify-around items-center h-12 uppercase font-mono text-[9px] font-bold">
           {/* Tabs item array */}
           {(['hoje', 'bussola', 'habitos', 'analytics', 'ajustes'] as const).map((tab) => {
