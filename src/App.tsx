@@ -186,6 +186,8 @@ export default function App() {
   const handleUpdateHabit = async (id: string, currentValue: number, completed = false, todayPhoto?: string, fullHabitUpdate?: Partial<Habit>) => {
     // Keep reference to previous habits for optimistic rollback in case of network failures
     const previousHabits = [...habits];
+    const oldHabit = previousHabits.find(h => h.id === id);
+    const resolvedPhoto = todayPhoto !== undefined ? todayPhoto : (oldHabit ? oldHabit.todayPhoto : undefined);
 
     try {
       if (completed) {
@@ -198,8 +200,8 @@ export default function App() {
       setHabits(prev => prev.map(h => {
         if (h.id === id) {
           const updated = { ...h, currentValue, completed, ...(fullHabitUpdate || {}) };
-          if (todayPhoto !== undefined) {
-            updated.todayPhoto = todayPhoto;
+          if (resolvedPhoto !== undefined) {
+            updated.todayPhoto = resolvedPhoto;
           }
 
           // Intelligence: If completed, and we have a connectedTraitId, we level up the Identity System automatically!
@@ -233,13 +235,13 @@ export default function App() {
 
       // If active overlay/modal is open, sync details instantly too
       if (selectedHabit && selectedHabit.id === id) {
-        setSelectedHabit(prev => prev ? { ...prev, currentValue, completed, todayPhoto: todayPhoto !== undefined ? todayPhoto : prev.todayPhoto, ...(fullHabitUpdate || {}) } : null);
+        setSelectedHabit(prev => prev ? { ...prev, currentValue, completed, todayPhoto: resolvedPhoto, ...(fullHabitUpdate || {}) } : null);
       }
 
       const response = await fetch(`/api/habits/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentValue, completed, todayPhoto, ...(fullHabitUpdate || {}) })
+        body: JSON.stringify({ currentValue, completed, todayPhoto: resolvedPhoto, ...(fullHabitUpdate || {}) })
       });
       
       const data = await response.json();

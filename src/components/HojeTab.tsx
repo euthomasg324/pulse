@@ -94,6 +94,8 @@ export default function HojeTab({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [isMantraOpen, setIsMantraOpen] = useState(false);
   const [mantraCompleted, setMantraCompleted] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(1.0);
+  const [isScrollingActive, setIsScrollingActive] = useState(true);
 
   const MANTRA_LINES = [
     "Minha mente é clara.",
@@ -122,6 +124,8 @@ export default function HojeTab({
   useEffect(() => {
     if (isMantraOpen && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
+      setScrollSpeed(1.0);
+      setIsScrollingActive(true);
     }
   }, [isMantraOpen]);
 
@@ -130,14 +134,19 @@ export default function HojeTab({
     let lastTime = performance.now();
     
     const scrollStep = (time: number) => {
-      if (isMantraOpen && scrollContainerRef.current) {
+      if (isMantraOpen && isScrollingActive && scrollContainerRef.current) {
         const elapsed = time - lastTime;
         lastTime = time;
         if (elapsed > 0) {
-          // Adjust scroll speed so that it scrolls elegantly (~32 pixels per second)
-          scrollContainerRef.current.scrollTop += 0.032 * elapsed;
+          // Scroll dynamically based on speed multiplier (1x = 0.032 pixels/ms)
+          scrollContainerRef.current.scrollTop += 0.032 * scrollSpeed * elapsed;
         }
         animationFrameId = requestAnimationFrame(scrollStep);
+      } else {
+        lastTime = time;
+        if (isMantraOpen) {
+          animationFrameId = requestAnimationFrame(scrollStep);
+        }
       }
     };
     
@@ -148,7 +157,7 @@ export default function HojeTab({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [isMantraOpen]);
+  }, [isMantraOpen, isScrollingActive, scrollSpeed]);
 
   const [funnels, setFunnels] = useState<{
     [habitId: string]: {
@@ -1055,13 +1064,45 @@ export default function HojeTab({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black flex flex-col overflow-hidden animate-none"
           >
+            {/* Play/Pause & Speed Controller Floating Pill */}
+            <div className="fixed top-6 left-6 bg-zinc-900/80 border border-white/10 backdrop-blur-md rounded-2xl px-3 py-2 flex items-center gap-2 text-white shadow-xl z-50 select-none hover:border-white/20 transition-all">
+              <button 
+                onClick={() => {
+                  playHapticSound("tick");
+                  setIsScrollingActive(prev => !prev);
+                }}
+                className="hover:text-yellow-400 text-white transition flex items-center justify-center p-1.5 bg-white/5 rounded-lg active:scale-95 cursor-pointer"
+                title={isScrollingActive ? "Pausar Rolagem" : "Retomar Rolagem"}
+              >
+                {isScrollingActive ? <Pause className="w-3.5 h-3.5 fill-white text-white" /> : <Play className="w-3.5 h-3.5 fill-white text-white" />}
+              </button>
+              
+              <div className="h-4 w-[1px] bg-white/10" />
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider hidden sm:inline">Velocidade</span>
+                <input 
+                  type="range"
+                  min="0.1"
+                  max="3.0"
+                  step="0.1"
+                  value={scrollSpeed}
+                  onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
+                  className="w-14 sm:w-24 accent-yellow-400 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                />
+                <span className="text-[9.5px] font-mono text-yellow-400 font-bold min-w-[24px] text-right">
+                  {scrollSpeed.toFixed(1)}x
+                </span>
+              </div>
+            </div>
+
             {/* Minimal Close (X) button ONLY */}
             <button
               onClick={() => {
                 playHapticSound("tick");
                 setIsMantraOpen(false);
               }}
-              className="fixed top-6 right-6 p-4 bg-zinc-900/80 border border-white/10 rounded-full text-zinc-300 hover:text-white transition z-50 hover:scale-105 active:scale-95 shadow-xl"
+              className="fixed top-6 right-6 p-4 bg-zinc-900/80 border border-white/10 rounded-full text-zinc-300 hover:text-white transition z-50 hover:scale-105 active:scale-95 shadow-xl cursor-pointer"
               title="Fechar"
             >
               <X className="w-5 h-5" />
