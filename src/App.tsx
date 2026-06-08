@@ -238,6 +238,20 @@ export default function App() {
         setSelectedHabit(prev => prev ? { ...prev, currentValue, completed, todayPhoto: resolvedPhoto, ...(fullHabitUpdate || {}) } : null);
       }
 
+      // Record a precise action log if it's an increment/change
+      const delta = currentValue - (oldHabit?.currentValue || 0);
+      if (delta !== 0 || completed !== oldHabit?.completed) {
+        fetch("/api/action-logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            habitId: id,
+            actionType: delta !== 0 ? "increment" : (completed ? "completed" : "uncompleted"),
+            valueDelta: delta
+          })
+        }).catch(() => {});
+      }
+
       const response = await fetch(`/api/habits/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -306,6 +320,21 @@ export default function App() {
       }
     } catch (err) {
       console.error("Error resetting day:", err);
+    }
+  };
+
+  // Reset History only
+  const handleResetHistory = async () => {
+    try {
+      const response = await fetch("/api/settings/reset-history", { method: "POST" });
+      const data = await response.json();
+      if (data.success) {
+        setHabits(data.habits || []);
+        setDismissedCongrats(false);
+        loadInsights();
+      }
+    } catch (err) {
+      console.error("Error resetting history:", err);
     }
   };
 
@@ -530,6 +559,7 @@ export default function App() {
           {activeTab === 'ajustes' && (
             <AjustesTab
               onResetDatabase={handleResetDatabase}
+              onResetHistory={handleResetHistory}
               onResetDay={handleResetDay}
               soundEnabled={soundEnabled}
               onToggleSound={() => setSoundEnabled(!soundEnabled)}

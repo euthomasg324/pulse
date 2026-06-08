@@ -31,6 +31,7 @@ export interface Habit {
   // Outcomes tracking
   resultOutcome?: string; // Users daily typed outcome note for this habit
   todayPhoto?: string; // User's daily uploaded photo
+  startedAt?: string; // When this task was started today
 }
 
 export interface TimelineItem {

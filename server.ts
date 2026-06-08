@@ -506,6 +506,23 @@ const generateMockHistory = (habitType: HabitType, target: number, completionRat
 // Factory default settings
 const defaultHabits: Habit[] = [
   {
+    id: "h-mantra",
+    name: "Mantra Diário",
+    icon: "Sparkles",
+    color: "purple",
+    type: "check",
+    targetValue: 1,
+    currentValue: 0,
+    completed: false,
+    frequencyType: "daily",
+    timeOfDay: "05:00",
+    priority: "high",
+    category: "Energia",
+    createdAt: new Date().toISOString(),
+    logs: [],
+    lastResetDate: new Date().toISOString().split('T')[0]
+  },
+  {
     id: "h-acordar-cedo",
     name: "Acordar Cedo",
     icon: "Sun",
@@ -706,6 +723,7 @@ const defaultHabits: Habit[] = [
 ];
 
 const defaultTimeline: TimelineItem[] = [
+  { id: "t-0", time: "05:00", title: "Mantra Diário", habitId: "h-mantra", completed: false },
   { id: "t-1", time: "06:00", title: "Acordar Cedo", habitId: "h-acordar-cedo", completed: false },
   { id: "t-2", time: "08:00", title: "Enviar Mensagens", habitId: "h-mensagens", completed: false },
   { id: "t-3", time: "10:00", title: "Ligações", habitId: "h-ligacoes", completed: false },
@@ -752,9 +770,13 @@ async function initSqlite() {
       connectedMacroId TEXT,
       connectedTraitId TEXT,
       resultOutcome TEXT,
-      todayPhoto TEXT
+      todayPhoto TEXT,
+      startedAt TEXT
     )
   `);
+
+  try { await sqlRun(`ALTER TABLE habits ADD COLUMN todayPhoto TEXT`); } catch(e){}
+  try { await sqlRun(`ALTER TABLE habits ADD COLUMN startedAt TEXT`); } catch(e){}
 
   await sqlRun(`
     CREATE TABLE IF NOT EXISTS habit_logs (
@@ -763,6 +785,16 @@ async function initSqlite() {
       value REAL,
       completed INTEGER,
       PRIMARY KEY (habitId, date)
+    )
+  `);
+
+  await sqlRun(`
+    CREATE TABLE IF NOT EXISTS action_logs (
+      id TEXT PRIMARY KEY,
+      habitId TEXT,
+      actionType TEXT,
+      timestamp TEXT,
+      valueDelta REAL
     )
   `);
 
@@ -890,7 +922,8 @@ async function loadStateFromSqlite() {
         connectedMacroId: h.connectedMacroId || h.connectedmacroid || h.ConnectedMacroId || undefined,
         connectedTraitId: h.connectedTraitId || h.connectedtraitid || h.ConnectedTraitId || undefined,
         resultOutcome: h.resultOutcome || h.resultoutcome || h.ResultOutcome || undefined,
-        todayPhoto: h.todayPhoto || h.todayphoto || h.TodayPhoto || undefined
+        todayPhoto: h.todayPhoto || h.todayphoto || h.TodayPhoto || undefined,
+        startedAt: h.startedAt || h.startedat || h.StartedAt || undefined
       };
     });
 
@@ -923,6 +956,50 @@ loadStateFromSqlite();
 
 // Obtain complete State
 app.get("/api/state", async (req, res) => {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let needsReset = false;
+    for (const h of dbState.habits) {
+      if (h.lastResetDate && h.lastResetDate < todayStr) {
+        needsReset = true;
+        break;
+      }
+    }
+
+    if (needsReset) {
+      console.log(`Auto daily reset triggered for new day: ${todayStr}`);
+      for (const h of dbState.habits) {
+        // 1. Save final to logs
+        await sqlRun(`
+          INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed)
+          VALUES (?, ?, ?, ?)
+        `, [h.id, h.lastResetDate || todayStr, h.currentValue, h.completed ? 1 : 0]);
+
+        // 2. Clear out
+        let val = 0;
+        let compl = 0;
+        if (h.type === 'check' || h.type === 'quantitative' || h.type === 'timed' || h.type === 'accumulative') {
+          val = 0;
+          compl = 0;
+        } else if (h.type === 'frequency') {
+          if (h.currentValue <= 1) {
+            val = h.targetValue;
+            compl = 1;
+          } else {
+            val = h.currentValue - 1;
+            compl = 0;
+          }
+        }
+        await sqlRun(`
+          UPDATE habits SET currentValue = ?, completed = ?, lastResetDate = ?, resultOutcome = NULL, todayPhoto = NULL
+          WHERE id = ?
+        `, [val, compl, todayStr, h.id]);
+
+        await sqlRun(`UPDATE timeline SET completed = 0 WHERE habitId = ?`, [h.id]);
+      }
+      await loadStateFromSqlite();
+    }
+  } catch(e) {}
   res.json(dbState);
 });
 
@@ -1038,6 +1115,33 @@ app.post("/api/reset-day", async (req, res) => {
   }
 });
 
+// Clear historical logs and progress, but strictly retain configurations
+app.post("/api/settings/reset-history", async (req, res) => {
+  try {
+    // Drop execution logs completely 
+    await sqlRun("DELETE FROM habit_logs");
+    
+    // Reset day and active counters for habits
+    await sqlRun(`
+      UPDATE habits 
+      SET currentValue = 0, 
+          completed = 0, 
+          todayPhoto = NULL, 
+          resultOutcome = NULL, 
+          startedAt = NULL,
+          lastResetDate = NULL
+    `);
+
+    // Complete reset for timeline execution states if they matter
+    await sqlRun("UPDATE timeline SET completed = 0");
+
+    await loadStateFromSqlite();
+    res.json({ success: true, ...dbState });
+  } catch(err) {
+    res.status(500).json({ success: false, error: "Falha ao esvaziar histórico." });
+  }
+});
+
 // Create habit on SQLite
 app.post("/api/habits", async (req, res) => {
   try {
@@ -1109,6 +1213,7 @@ app.put("/api/habits/:id", async (req, res) => {
     const nextPhoto = todayPhoto !== undefined ? todayPhoto : habitMemory.todayPhoto || '';
     // Use the undefined check so we can clear it by sending null or empty string, or pass the existing
     const nextTimeOfDay = timeOfDay !== undefined ? timeOfDay : habitMemory.timeOfDay || null;
+    const nextStartedAt = req.body.startedAt !== undefined ? req.body.startedAt : habitMemory.startedAt || null;
 
     // Auto complete checks triggers if currentValue changed
     if (currentValue !== undefined) {
@@ -1131,9 +1236,9 @@ app.put("/api/habits/:id", async (req, res) => {
     // Save unified database state representation
     await sqlRun(`
       UPDATE habits
-      SET currentValue = ?, completed = ?, resultOutcome = ?, todayPhoto = ?, timeOfDay = ?
+      SET currentValue = ?, completed = ?, resultOutcome = ?, todayPhoto = ?, timeOfDay = ?, startedAt = ?
       WHERE id = ?
-    `, [nextVal, nextComp, nextOutcome, nextPhoto, nextTimeOfDay, id]);
+    `, [nextVal, nextComp, nextOutcome, nextPhoto, nextTimeOfDay, nextStartedAt, id]);
 
     // Insert live logs update for today's snapshot as well so we look consistent in real-time
     const todayStr = new Date().toISOString().split('T')[0];
@@ -1166,6 +1271,56 @@ app.delete("/api/timeline/:id", async (req, res) => {
     res.json({ success: true, timeline: dbState.timeline });
   } catch (err) {
     res.status(500).json({ error: "Falha SQL" });
+  }
+});
+
+// --- ACTION LOGGING (Precise Analytics) ---
+app.post("/api/action-logs", async (req, res) => {
+  try {
+    const { habitId, actionType, valueDelta } = req.body;
+    const newId = `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const timestamp = new Date().toISOString();
+    
+    await sqlRun(`
+      INSERT INTO action_logs (id, habitId, actionType, timestamp, valueDelta)
+      VALUES (?, ?, ?, ?, ?)
+    `, [newId, habitId, actionType, timestamp, valueDelta || 0]);
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Falha ao registrar log de ação" });
+  }
+});
+
+app.get("/api/action-logs/:habitId", async (req, res) => {
+  try {
+    const habitId = req.params.habitId;
+    const logs = await sqlAll(`SELECT * FROM action_logs WHERE habitId = ? ORDER BY timestamp ASC`, [habitId]);
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: "Falha ao ler logs de ação" });
+  }
+});
+
+app.get("/api/analytics/daily-summary", async (req, res) => {
+  try {
+    // Generate a summary of today's performance
+    const todayStr = new Date().toISOString().split('T')[0];
+    const logs = await sqlAll(`SELECT al.*, h.name FROM action_logs al JOIN habits h ON h.id = al.habitId WHERE al.timestamp LIKE ? ORDER BY timestamp ASC`, [`${todayStr}%`]);
+    
+    // Group by hour
+    const hourlyActivity: Record<string, number> = {};
+    for (const log of logs) {
+      const timestamp = log.timestamp || log.Timestamp;
+      if (timestamp) {
+        const hour = timestamp.substring(11, 13);
+        hourlyActivity[hour] = (hourlyActivity[hour] || 0) + 1;
+      }
+    }
+
+    res.json({ success: true, logs, hourlyActivity });
+  } catch (err) {
+    res.status(500).json({ error: "Falha analytica" });
   }
 });
 

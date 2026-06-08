@@ -35,6 +35,8 @@ interface HojeTabProps {
   playHapticSound: (type: "tick" | "complete" | "reset" | "warguerra") => void;
 }
 
+import TimerHabit from "./TimerHabit";
+
 export default function HojeTab({
   habits,
   onUpdateHabit,
@@ -96,6 +98,21 @@ export default function HojeTab({
   const [mantraCompleted, setMantraCompleted] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1.0);
   const [isScrollingActive, setIsScrollingActive] = useState(true);
+
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [summaryData, setSummaryData] = useState<any>(null);
+
+  const [pendingCompletionHabit, setPendingCompletionHabit] = useState<Habit | null>(null);
+  const [pendingCompletionData, setPendingCompletionData] = useState<{val: number, isComplete: boolean} | null>(null);
+
+  useEffect(() => {
+    if (isSummaryOpen) {
+      fetch("/api/analytics/daily-summary")
+        .then(res => res.json())
+        .then(data => setSummaryData(data))
+        .catch(() => {});
+    }
+  }, [isSummaryOpen]);
 
   const MANTRA_LINES = [
     "Minha mente é clara.",
@@ -265,6 +282,21 @@ export default function HojeTab({
   const todayScore =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
+  const handleHabitInteraction = (habit: Habit, val: number, isComplete: boolean) => {
+    // If we're setting it to completed AND it isn't already completed
+    if (isComplete && !habit.completed && !habit.todayPhoto) {
+      setPendingCompletionHabit(habit);
+      setPendingCompletionData({ val, isComplete });
+      return;
+    }
+    // Otherwise proceed normally
+    if (!habit.startedAt && val > 0) {
+        onUpdateHabit(habit.id, val, isComplete, undefined, { startedAt: new Date().toISOString() });
+    } else {
+        onUpdateHabit(habit.id, val, isComplete);
+    }
+  };
+
   const getSortedHabits = () => {
     return [...habits].sort((a, b) => {
       if (a.completed !== b.completed) {
@@ -336,6 +368,39 @@ export default function HojeTab({
                 />
               </div>
             </div>
+          ) : habit.id === "h-mantra" ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                playHapticSound("tick");
+                setIsMantraOpen(true);
+              }}
+              className={`w-full flex items-center justify-center gap-2 transition-all ${
+                isFocusMode
+                  ? "py-2.5 rounded-xl text-xs"
+                  : "py-1.5 rounded-lg text-[10px]"
+              } font-bold uppercase tracking-widest font-mono border bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border-amber-500/30 cursor-pointer`}
+            >
+              <Sparkles className={isFocusMode ? "w-4 h-4" : "w-3.5 h-3.5"} />
+              Iniciar Recitação
+            </button>
+          ) : habit.id === "h-dormir-cedo" ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                playHapticSound("warguerra");
+                // Open Daily Summary
+                setIsSummaryOpen(true);
+              }}
+              className={`w-full flex items-center justify-center gap-2 transition-all ${
+                isFocusMode
+                  ? "py-2.5 rounded-xl text-xs"
+                  : "py-1.5 rounded-lg text-[10px]"
+              } font-bold uppercase tracking-widest font-mono border bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 border-indigo-500/30 cursor-pointer`}
+            >
+              <Activity className={isFocusMode ? "w-4 h-4" : "w-3.5 h-3.5"} />
+              Relatório de Fechamento
+            </button>
           ) : habit.id === "h-meditar" ? (
             <div className="flex flex-col gap-2">
               <div
@@ -364,8 +429,8 @@ export default function HojeTab({
                 e.stopPropagation();
                 const nextComp = !habit.completed;
                 playHapticSound(nextComp ? "complete" : "reset");
-                onUpdateHabit(
-                  habit.id,
+                handleHabitInteraction(
+                  habit,
                   nextComp ? habit.targetValue : 0,
                   nextComp,
                 );
@@ -588,12 +653,19 @@ export default function HojeTab({
             className={`grid grid-cols-3 gap-2 shrink-0 ${isFocusMode ? "pt-1" : ""}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {habit.id === "h-mensagens" ? (
+            {habit.type === "timed" ? (
+              <TimerHabit 
+                habit={habit} 
+                onComplete={(val, isComp) => handleHabitInteraction(habit, val, isComp)} 
+                isFocusMode={isFocusMode} 
+                playHapticSound={playHapticSound} 
+              />
+            ) : habit.id === "h-mensagens" ? (
               <>
                 <button
                   onClick={() => {
                     const val = Math.max(0, habit.currentValue - 10);
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-black/40 ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} text-white font-sans font-bold hover:bg-white/10 border border-white/5 rounded-xl transition cursor-pointer`}
                 >
@@ -602,7 +674,7 @@ export default function HojeTab({
                 <button
                   onClick={() => {
                     const val = Math.min(300, habit.currentValue + 10);
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-white/10 ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} text-white font-sans font-bold hover:bg-white/20 border border-white/10 rounded-xl transition cursor-pointer`}
                 >
@@ -611,7 +683,7 @@ export default function HojeTab({
                 <button
                   onClick={() => {
                     const val = Math.min(300, habit.currentValue + 50);
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-white text-black ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} font-sans font-bold hover:bg-zinc-200 border border-transparent rounded-xl transition cursor-pointer`}
                 >
@@ -623,7 +695,7 @@ export default function HojeTab({
                 <button
                   onClick={() => {
                     const val = Math.max(0, habit.currentValue - 1);
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-black/40 ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} text-white font-sans font-bold hover:bg-white/10 border border-white/5 rounded-xl transition cursor-pointer`}
                 >
@@ -632,7 +704,7 @@ export default function HojeTab({
                 <button
                   onClick={() => {
                     const val = Math.min(50, habit.currentValue + 1);
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-white/10 ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} text-white font-sans font-bold hover:bg-white/20 border border-white/10 rounded-xl transition cursor-pointer`}
                 >
@@ -641,7 +713,7 @@ export default function HojeTab({
                 <button
                   onClick={() => {
                     const val = Math.min(50, habit.currentValue + 10);
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-white text-black ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} font-sans font-bold hover:bg-zinc-200 border border-transparent rounded-xl transition cursor-pointer`}
                 >
@@ -655,7 +727,7 @@ export default function HojeTab({
                     const val = Number(
                       Math.min(3, habit.currentValue + 0.3).toFixed(2),
                     );
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-blue-500/10 ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} text-blue-400 font-sans font-bold hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition cursor-pointer`}
                 >
@@ -666,7 +738,7 @@ export default function HojeTab({
                     const val = Number(
                       Math.min(3, habit.currentValue + 0.5).toFixed(2),
                     );
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-blue-500/20 ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} text-blue-400 font-sans font-bold hover:bg-blue-500/30 border border-blue-500/30 rounded-xl transition cursor-pointer`}
                 >
@@ -677,7 +749,7 @@ export default function HojeTab({
                     const val = Number(
                       Math.min(3, habit.currentValue + 1.0).toFixed(2),
                     );
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-blue-500 text-black ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} font-sans font-bold hover:bg-blue-400 border border-transparent rounded-xl transition cursor-pointer`}
                 >
@@ -689,7 +761,7 @@ export default function HojeTab({
                 <button
                   onClick={() => {
                     const val = Math.max(0, habit.currentValue - 1);
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`bg-black/40 ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} text-white font-sans font-bold hover:bg-white/10 border border-white/5 rounded-xl transition cursor-pointer`}
                 >
@@ -701,7 +773,7 @@ export default function HojeTab({
                       habit.targetValue,
                       habit.currentValue + 1,
                     );
-                    onUpdateHabit(habit.id, val, val >= habit.targetValue);
+                    handleHabitInteraction(habit, val, val >= habit.targetValue);
                   }}
                   className={`col-span-2 bg-white text-black ${isFocusMode ? "py-2.5 text-xs" : "text-[10px] py-1.5"} font-sans font-bold hover:bg-zinc-200 rounded-xl transition cursor-pointer`}
                 >
@@ -778,42 +850,6 @@ export default function HojeTab({
         </div>
       </div>
 
-      {/* GLOWING AMBER DAILY MANTRA ACTION STRIP */}
-      <div className="px-3 md:px-4 mb-3 shrink-0">
-        <motion.div 
-          onClick={() => { 
-            playHapticSound("tick"); 
-            setIsMantraOpen(true); 
-          }}
-          whileHover={{ scale: 1.01, borderColor: "rgba(245, 158, 11, 0.4)" }}
-          whileTap={{ scale: 0.99 }}
-          className={`cursor-pointer p-4 rounded-3xl border flex items-center justify-between transition-all duration-300 relative overflow-hidden backdrop-blur-3xl ${
-            mantraCompleted 
-              ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' 
-              : 'bg-amber-500/5 border-amber-900/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.05)]'
-          }`}
-        >
-          {/* Subtle radiating glowing circles */}
-          <div className="absolute -inset-10 opacity-20 bg-[radial-gradient(circle_at_center,var(--color-amber-500)_0%,transparent_50%)] pointer-events-none" />
-          <div className="flex items-center gap-3.5 relative z-10">
-            <span className={`text-xl transition-transform duration-300 ${mantraCompleted ? '' : 'animate-bounce'}`}>🔮</span>
-            <div>
-              <div className="text-[9px] uppercase font-mono tracking-widest text-zinc-500 font-bold leading-none mb-1">REPROGRAMAÇÃO DIÁRIA</div>
-              <div className="text-sm font-semibold leading-none text-zinc-100 tracking-tight">
-                {mantraCompleted ? "Mantra Recitado. Presença forte e poder puro." : "Recitar Mantra do Dia (Teleprompter)"}
-              </div>
-            </div>
-          </div>
-          <span className={`text-[9px] font-mono font-black px-2.5 py-1 rounded-xl border uppercase shrink-0 transition-all ${
-            mantraCompleted 
-              ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
-              : 'bg-amber-500/10 border-amber-500/30 text-amber-300 animate-pulse'
-          }`}>
-            {mantraCompleted ? "Alinhado" : "Falar"}
-          </span>
-        </motion.div>
-      </div>
-
       {viewMode === "grid" ? (
         /* GRID VIEW: Clean, modern, bento-style */
         <div className="flex-1 grid grid-cols-2 gap-3 min-h-0 overflow-y-auto px-1 pb-4 content-start">
@@ -825,15 +861,28 @@ export default function HojeTab({
               colorPresets.blue;
 
             return (
-              <div
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 key={habit.id}
-                onClick={() => onSelectHabit(habit)}
+                onClick={() => {
+                  if (habit.id === "h-mantra") {
+                    playHapticSound("tick");
+                    setIsMantraOpen(true);
+                  } else if (habit.id === "h-dormir-cedo") {
+                    playHapticSound("tick");
+                    setIsSummaryOpen(true);
+                  } else {
+                    onSelectHabit(habit);
+                  }
+                }}
                 className={`relative flex flex-col justify-between transition-all duration-300 rounded-3xl p-4 cursor-pointer overflow-hidden border ${
                   habit.completed
                     ? "bg-zinc-900 border-transparent opacity-50"
                     : "bg-zinc-900/60 hover:bg-zinc-800 border-white/5 hover:border-white/20"
                 }`}
-                style={{ minHeight: "180px" }}
+                style={{ minHeight: "180px", transformOrigin: "center" }}
               >
                 {/* Visual Cover Layer if Photo is present */}
                 {habit.todayPhoto && (
@@ -883,7 +932,7 @@ export default function HojeTab({
                 <div className="z-10 mt-auto">
                   {renderHabitControls(habit, false)}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -906,13 +955,25 @@ export default function HojeTab({
             const nextHabit = sortedHabits[index + 1];
 
             return (
-              <div
+              <motion.div
+                layout
                 key={habit.id}
                 className="w-full h-full snap-start snap-always flex flex-col justify-between pt-1 pb-3 relative items-center px-1"
               >
                 {/* The Huge Focus Card */}
                 <div
-                  className={`relative w-full flex-1 mb-3 rounded-[36px] overflow-hidden flex flex-col p-5 shadow-2xl transition-all duration-300 border ${habit.completed ? "border-emerald-500/30" : "border-white/10"}`}
+                  onClick={() => {
+                    if (habit.id === "h-mantra") {
+                      playHapticSound("tick");
+                      setIsMantraOpen(true);
+                    } else if (habit.id === "h-dormir-cedo") {
+                      playHapticSound("tick");
+                      setIsSummaryOpen(true);
+                    } else {
+                      onSelectHabit(habit);
+                    }
+                  }}
+                  className={`relative w-full flex-1 mb-3 rounded-[36px] overflow-hidden flex flex-col p-5 shadow-2xl transition-all duration-300 border cursor-pointer ${habit.completed ? "border-emerald-500/30" : "border-white/10"}`}
                 >
                   {/* Generative Visual Representation Layer */}
                   <div className="absolute inset-0 bg-zinc-950 overflow-hidden flex items-center justify-center">
@@ -1038,7 +1099,7 @@ export default function HojeTab({
                     </div>
                   ) : null}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
 
@@ -1176,12 +1237,168 @@ export default function HojeTab({
         )}
       </AnimatePresence>
 
+      {/* SUMMARY OVERLAY / CLOSING REPORT */}
+      <AnimatePresence>
+        {isSummaryOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed inset-0 z-50 bg-zinc-950 flex flex-col p-4 sm:p-6 overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-display font-black text-white">Fechamento do Dia</h2>
+                <div className="text-zinc-400 font-mono text-xs uppercase tracking-widest mt-1">
+                  Relatório de Força Bruta
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSummaryOpen(false)}
+                className="p-3 bg-zinc-900 border border-white/5 rounded-full hover:bg-zinc-800 text-zinc-400 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {summaryData ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-3xl">
+                    <div className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mb-1">SCORE DIÁRIO</div>
+                    <div className="text-4xl font-display font-black text-white">{todayScore}%</div>
+                  </div>
+                  <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-3xl">
+                    <div className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mb-1">HÁBITOS COMPLETOS</div>
+                    <div className="text-4xl font-display font-black text-emerald-400">{completedCount}/{totalCount}</div>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-900/50 border border-white/5 p-5 rounded-3xl space-y-4">
+                  <h3 className="font-mono text-xs uppercase tracking-widest text-zinc-400">Picos Operacionais</h3>
+                  <div className="flex items-end gap-1 h-32 overflow-hidden border-b border-white/10 pb-1">
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const hr = i.toString().padStart(2, '0');
+                      const count = summaryData.hourlyActivity?.[hr] || 0;
+                      const max = Math.max(...Object.values(summaryData.hourlyActivity as Record<string, number>).concat([1])) || 1;
+                      const heightPct = count > 0 ? Math.max((count / max) * 100, 5) : 0;
+                      
+                      return (
+                        <div key={hr} className="flex-1 flex flex-col justify-end gap-1 relative group">
+                          {heightPct > 0 && (
+                            <div 
+                              className="w-full bg-indigo-500 rounded-t-sm transition-all duration-700 hover:bg-white" 
+                              style={{ height: `${heightPct}%` }}
+                            />
+                          )}
+                          <div className="text-[6px] text-zinc-600 font-mono text-center absolute -bottom-4 w-full">
+                            {i%4===0 ? hr : ''}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="pt-2 text-center text-[10px] text-zinc-500 font-mono">Volume por hora</div>
+                </div>
+
+                <div className="bg-zinc-900/50 border border-white/5 p-5 rounded-3xl space-y-4">
+                  <h3 className="font-mono text-xs uppercase tracking-widest text-zinc-400">Log Completo de Execuções</h3>
+                  <div className="space-y-2">
+                    {summaryData.logs && summaryData.logs.length > 0 ? summaryData.logs.map((log: any) => (
+                      <div key={log.id} className="flex justify-between items-center bg-black/40 border border-white/5 p-3 rounded-xl">
+                        <div>
+                          <div className="hidden sm:block text-[8px] text-zinc-600 font-mono mb-1">{log.id}</div>
+                          <div className="font-bold text-sm text-zinc-200">{log.name}</div>
+                          <div className="text-[10px] font-mono text-indigo-400">{(log.actionType || log.ActionType).toUpperCase()} {log.valueDelta ? `(${log.valueDelta > 0 ? '+'+log.valueDelta : log.valueDelta})` : ''}</div>
+                        </div>
+                        <div className="text-[10px] text-zinc-500 font-mono">
+                          {new Date(log.timestamp || log.Timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-zinc-500 text-sm italic font-mono text-center py-4">Nenhuma ação registrada no server hoje.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <Activity className="w-8 h-8 text-zinc-600 animate-pulse" />
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* MODAL INPUT BRAIN DUMP */}
       <InputCaptureModal
         isOpen={isInputModalOpen}
         onClose={() => setIsInputModalOpen(false)}
         playHapticSound={playHapticSound}
       />
+
+      {/* PHOTO CAPTURE MODAL OPENS AUTOMATICALLY FOR PROOF */}
+      <AnimatePresence>
+        {pendingCompletionHabit && pendingCompletionData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col justify-center items-center p-6"
+          >
+            <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-sm w-full flex flex-col items-center">
+              <Camera className="w-12 h-12 text-zinc-400 mb-4 animate-bounce" />
+              <h2 className="text-2xl font-display font-black text-white text-center tracking-tight mb-2">Comprovar Execução</h2>
+              <p className="text-sm text-zinc-400 font-mono text-center mb-8">
+                Tire uma foto para atestar o avanço de {pendingCompletionHabit.name}
+              </p>
+              
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => {
+                    setPendingCompletionHabit(null);
+                    setPendingCompletionData(null);
+                  }}
+                  className="flex-1 py-3 text-sm font-bold text-zinc-400 hover:text-white transition"
+                >
+                  Cancelar
+                </button>
+                <div className="flex-1 relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const base64String = reader.result as string;
+                          onUpdateHabit(
+                            pendingCompletionHabit.id,
+                            pendingCompletionData.val,
+                            pendingCompletionData.isComplete,
+                            base64String, // todayPhoto receives the captured image
+                            pendingCompletionHabit.startedAt ? undefined : { startedAt: new Date().toISOString() }
+                          );
+                          setPendingCompletionHabit(null);
+                          setPendingCompletionData(null);
+                          playHapticSound("complete");
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  <div className="bg-white text-black py-3 rounded-xl text-sm font-bold text-center pointer-events-none w-full shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                    Câmera
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

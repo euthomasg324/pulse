@@ -15,6 +15,7 @@ import { getAccessToken } from "../firebase";
 
 interface AjustesTabProps {
   onResetDatabase: () => void;
+  onResetHistory: () => void;
   onResetDay: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
@@ -24,6 +25,7 @@ interface AjustesTabProps {
 
 export default function AjustesTab({
   onResetDatabase,
+  onResetHistory,
   onResetDay,
   soundEnabled,
   onToggleSound,
@@ -238,6 +240,24 @@ export default function AjustesTab({
               <div>
                 <span className="block font-bold">Redefinir Ciclo Diário</span>
                 <span className="block text-[8px] text-zinc-500 font-normal tracking-wide mt-0.5">Arquiva os volumes atuados no SQLite</span>
+              </div>
+            </button>
+
+            {/* Clear history but keep configured habits */}
+            <button
+              id="settings-reset-history-only"
+              onClick={() => {
+                if(confirm("Deseja apagar TODO o seu histórico, registros e fotos salvas? Seus hábitos cadastrados serão mantidos para que você recomece do zero amanhã!")) {
+                  playHapticSound('reset');
+                  onResetHistory();
+                }
+              }}
+              className="py-3 px-4 bg-zinc-900 hover:bg-orange-950/20 border border-white/5 hover:border-orange-900/40 rounded-xl cursor-pointer hover:text-orange-400 transition flex items-center gap-3"
+            >
+              <RefreshCw className="w-4 h-4 text-orange-500 shrink-0" />
+              <div>
+                <span className="block font-bold">Zerar Histórico e Progressos</span>
+                <span className="block text-[8px] text-zinc-500 font-normal tracking-wide mt-0.5">Apaga fotos e logs e zera stats diários</span>
               </div>
             </button>
 
