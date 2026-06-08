@@ -24,30 +24,31 @@ import {
   Compass,
   LogOut
 } from "lucide-react";
-import Splash from "./components/Splash";
 import HojeTab from "./components/HojeTab";
 import BussolaTab from "./components/BussolaTab";
 import HabitosTab from "./components/HabitosTab";
 import AnalyticsTab from "./components/AnalyticsTab";
 import AjustesTab from "./components/AjustesTab";
 import HabitoIndividualModal from "./components/HabitoIndividualModal";
+import { queueOfflineRequest, setupOfflineSync } from "./lib/offlineQueue";
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => {
+    if (localStorage.getItem("pulse_legacy_bypass_auth") === "true") {
+      return { uid: "local-guest", displayName: "Acesso Local", email: "local@pulse" } as any;
+    }
+    return null;
+  });
+  const [isAuthLoading, setIsAuthLoading] = useState(() => {
+    return localStorage.getItem("pulse_legacy_bypass_auth") !== "true";
+  });
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    setupOfflineSync();
     // Check if user chose to bypass Google authentication (e.g. on custom domain like Railway)
     const isBypassed = localStorage.getItem("pulse_legacy_bypass_auth") === "true";
     if (isBypassed) {
-      setUser({
-        uid: "local-guest",
-        displayName: "Acesso Local",
-        email: "local@pulse"
-      } as any);
-      setIsAuthLoading(false);
       return;
     }
 
@@ -151,8 +152,12 @@ export default function App() {
       const response = await fetch("/api/state");
       const data: ServerState = await response.json();
       setHabits(data.habits || []);
+      localStorage.setItem('pulse_offline_habits', JSON.stringify(data.habits || []));
     } catch (err) {
       console.error("Failed loading state:", err);
+      // Fallback to offline stored state
+      const offlineHabits = JSON.parse(localStorage.getItem('pulse_offline_habits') || '[]');
+      setHabits(offlineHabits);
     }
   };
 
@@ -197,41 +202,45 @@ export default function App() {
       }
 
       // Optimistically update the primary habit list state instantly
-      setHabits(prev => prev.map(h => {
-        if (h.id === id) {
-          const updated = { ...h, currentValue, completed, ...(fullHabitUpdate || {}) };
-          if (resolvedPhoto !== undefined) {
-            updated.todayPhoto = resolvedPhoto;
-          }
+      setHabits(prev => {
+        const next = prev.map(h => {
+          if (h.id === id) {
+            const updated = { ...h, currentValue, completed, ...(fullHabitUpdate || {}) };
+            if (resolvedPhoto !== undefined) {
+              updated.todayPhoto = resolvedPhoto;
+            }
 
-          // Intelligence: If completed, and we have a connectedTraitId, we level up the Identity System automatically!
-          if (completed && updated.connectedTraitId) {
-            try {
-              const charsRaw = localStorage.getItem("pulse_identity_characteristics_v1");
-              if (charsRaw) {
-                const chars = JSON.parse(charsRaw);
-                let updatedChars = false;
-                for (const c of chars) {
-                  for (const p of c.pairs) {
-                    if (p.id === updated.connectedTraitId) {
-                      p.balance = Math.min(100, Math.max(0, p.balance + 5)); // Increase towards positive behavior!
-                      updatedChars = true;
+            // Intelligence: If completed, and we have a connectedTraitId, we level up the Identity System automatically!
+            if (completed && updated.connectedTraitId) {
+              try {
+                const charsRaw = localStorage.getItem("pulse_identity_characteristics_v1");
+                if (charsRaw) {
+                  const chars = JSON.parse(charsRaw);
+                  let updatedChars = false;
+                  for (const c of chars) {
+                    for (const p of c.pairs) {
+                      if (p.id === updated.connectedTraitId) {
+                        p.balance = Math.min(100, Math.max(0, p.balance + 5)); // Increase towards positive behavior!
+                        updatedChars = true;
+                      }
                     }
                   }
+                  if (updatedChars) {
+                    localStorage.setItem("pulse_identity_characteristics_v1", JSON.stringify(chars));
+                    // Fire to backend sync
+                    queueOfflineRequest("/api/kv", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "pulse_identity_characteristics_v1", value: chars }) });
+                  }
                 }
-                if (updatedChars) {
-                  localStorage.setItem("pulse_identity_characteristics_v1", JSON.stringify(chars));
-                  // Fire to backend sync
-                  fetch("/api/kv", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "pulse_identity_characteristics_v1", value: chars }) }).catch(()=>{});
-                }
-              }
-            } catch (e) {}
-          }
+              } catch (e) {}
+            }
 
-          return updated;
-        }
-        return h;
-      }));
+            return updated;
+          }
+          return h;
+        });
+        localStorage.setItem('pulse_offline_habits', JSON.stringify(next));
+        return next;
+      });
 
       // If active overlay/modal is open, sync details instantly too
       if (selectedHabit && selectedHabit.id === id) {
@@ -241,7 +250,7 @@ export default function App() {
       // Record a precise action log if it's an increment/change
       const delta = currentValue - (oldHabit?.currentValue || 0);
       if (delta !== 0 || completed !== oldHabit?.completed) {
-        fetch("/api/action-logs", {
+        queueOfflineRequest("/api/action-logs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -249,7 +258,7 @@ export default function App() {
             actionType: delta !== 0 ? "increment" : (completed ? "completed" : "uncompleted"),
             valueDelta: delta
           })
-        }).catch(() => {});
+        });
       }
 
       const response = await fetch(`/api/habits/${id}`, {
@@ -261,18 +270,27 @@ export default function App() {
       const data = await response.json();
       if (data.success && data.habit) {
         // Sync with exact server-side model containing log aggregations
-        setHabits(prev => prev.map(h => h.id === id ? data.habit : h));
+        setHabits(prev => {
+          const next = prev.map(h => h.id === id ? data.habit : h);
+          localStorage.setItem('pulse_offline_habits', JSON.stringify(next));
+          return next;
+        });
         if (selectedHabit && selectedHabit.id === id) {
           setSelectedHabit(data.habit);
         }
       } else if (!data.success) {
         // Rollback state if server returns failure
         setHabits(previousHabits);
+        localStorage.setItem('pulse_offline_habits', JSON.stringify(previousHabits));
       }
     } catch (err) {
-      console.error("Error updating habit, rolling back:", err);
-      // Rollback state if network request fails
-      setHabits(previousHabits);
+      console.error("Network error updating habit, queuing offline sync:", err);
+      // Do NOT rollback. Enqueue the offline request!
+      queueOfflineRequest(`/api/habits/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentValue, completed, todayPhoto: resolvedPhoto, ...(fullHabitUpdate || {}) })
+      });
     }
   };
 
@@ -362,7 +380,11 @@ export default function App() {
   const showCongratsScreen = todayScore === 100 && totalCount > 0 && !dismissedCongrats;
 
   if (isAuthLoading) {
-    return <Splash phrase="Conectando aos servidores..." onComplete={() => {}} />;
+    return (
+      <div className="w-full h-[100dvh] bg-[#000000] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-white/10 border-t-white/80 rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   const handleLogin = async () => {
@@ -454,19 +476,6 @@ export default function App() {
   return (
     <div id="applet-viewport" className="w-full h-[100dvh] min-h-[100dvh] pt-[calc(env(safe-area-inset-top,0px))] bg-[#000000] text-white flex flex-col justify-between overflow-hidden relative font-sans">
       
-      {/* 1. Splash Screen Initial Animation Overlay */}
-      <AnimatePresence mode="wait">
-        {showSplash && (
-          <Splash 
-            phrase={dynamicPhrase} 
-            onComplete={() => {
-              setShowSplash(false);
-              playHapticSound('complete');
-            }} 
-          />
-        )}
-      </AnimatePresence>
-
       {/* 2. Full screen Congrats 100% finished overlay */}
       <AnimatePresence>
         {showCongratsScreen && (

@@ -2,20 +2,17 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { registerSW } from 'virtual:pwa-register';
 
-// Registra o Service Worker para PWA (Notificações, Offline, etc)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
-      (registration) => {
-        console.log('ServiceWorker registrado com sucesso: ', registration.scope);
-      },
-      (err) => {
-        console.log('Falha ao registrar o ServiceWorker: ', err);
-      }
-    );
-  });
-}
+// Register standard Vite PWA Service Worker
+const updateSW = registerSW({
+  onNeedRefresh() {
+    console.log("New content available, please refresh.");
+  },
+  onOfflineReady() {
+    console.log("App ready to work offline");
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
