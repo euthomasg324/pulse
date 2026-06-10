@@ -122,10 +122,10 @@ function translateQuery(sql: string): string {
   
   if (translated.match(/INSERT OR REPLACE INTO habit_logs/i)) {
     translated = `
-      INSERT INTO habit_logs (habitId, date, value, completed)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO habit_logs (habitId, date, value, completed, photo, outcome)
+      VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (habitId, date) DO UPDATE 
-      SET value = EXCLUDED.value, completed = EXCLUDED.completed
+      SET value = EXCLUDED.value, completed = EXCLUDED.completed, photo = EXCLUDED.photo, outcome = EXCLUDED.outcome
     `;
   }
   
@@ -256,9 +256,11 @@ const sqlRun = async (sql: string, params: any[] = []): Promise<any> => {
     const date = params[1];
     const value = params[2];
     const completed = params[3];
+    const photo = params[4] || null;
+    const outcome = params[5] || null;
 
     jsonDb.habit_logs = jsonDb.habit_logs.filter(l => !(l.habitId === habitId && l.date === date));
-    jsonDb.habit_logs.push({ habitId, date, value, completed });
+    jsonDb.habit_logs.push({ habitId, date, value, completed, photo, outcome });
     saveJsonDb();
     return { changes: 1 };
   }
@@ -788,6 +790,9 @@ async function initSqlite() {
     )
   `);
 
+  try { await sqlRun(`ALTER TABLE habit_logs ADD COLUMN photo TEXT`); } catch(e){}
+  try { await sqlRun(`ALTER TABLE habit_logs ADD COLUMN outcome TEXT`); } catch(e){}
+
   await sqlRun(`
     CREATE TABLE IF NOT EXISTS action_logs (
       id TEXT PRIMARY KEY,
@@ -844,9 +849,9 @@ async function loadStateFromSqlite() {
 
           for (const log of h.logs) {
             await sqlRun(`
-              INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed)
-              VALUES (?, ?, ?, ?)
-            `, [h.id, log.date, log.value, log.completed ? 1 : 0]);
+              INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed, photo, outcome)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `, [h.id, log.date, log.value, log.completed ? 1 : 0, log.photo || null, log.outcome || null]);
           }
         }
       }
@@ -864,9 +869,9 @@ async function loadStateFromSqlite() {
 
         for (const log of h.logs) {
           await sqlRun(`
-            INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed)
-            VALUES (?, ?, ?, ?)
-          `, [h.id, log.date, log.value, log.completed ? 1 : 0]);
+            INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed, photo, outcome)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `, [h.id, log.date, log.value, log.completed ? 1 : 0, log.photo || null, log.outcome || null]);
         }
       }
 
@@ -897,7 +902,9 @@ async function loadStateFromSqlite() {
         .map((l: any) => ({
           date: l.date || l.Date,
           value: Number(l.value ?? l.Value ?? l.value ?? 0),
-          completed: Boolean(l.completed ?? l.Completed ?? false)
+          completed: Boolean(l.completed ?? l.Completed ?? false),
+          photo: l.photo || l.Photo || undefined,
+          outcome: l.outcome || l.Outcome || undefined
         }))
         .sort((a,b) => a.date.localeCompare(b.date));
 
@@ -971,9 +978,9 @@ app.get("/api/state", async (req, res) => {
       for (const h of dbState.habits) {
         // 1. Save final to logs
         await sqlRun(`
-          INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed)
-          VALUES (?, ?, ?, ?)
-        `, [h.id, h.lastResetDate || todayStr, h.currentValue, h.completed ? 1 : 0]);
+          INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed, photo, outcome)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `, [h.id, h.lastResetDate || todayStr, h.currentValue, h.completed ? 1 : 0, h.todayPhoto || null, h.resultOutcome || null]);
 
         // 2. Clear out
         let val = 0;
@@ -1068,9 +1075,9 @@ app.post("/api/reset-day", async (req, res) => {
     for (const h of dbState.habits) {
       // 1. Save today's final execution to historical log
       await sqlRun(`
-        INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed)
-        VALUES (?, ?, ?, ?)
-      `, [h.id, todayStr, h.currentValue, h.completed ? 1 : 0]);
+        INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed, photo, outcome)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [h.id, todayStr, h.currentValue, h.completed ? 1 : 0, h.todayPhoto || null, h.resultOutcome || null]);
 
       // 2. Set default resets back to zero
       let val = 0;
@@ -1243,9 +1250,9 @@ app.put("/api/habits/:id", async (req, res) => {
     // Insert live logs update for today's snapshot as well so we look consistent in real-time
     const todayStr = new Date().toISOString().split('T')[0];
     await sqlRun(`
-      INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed)
-      VALUES (?, ?, ?, ?)
-    `, [id, todayStr, nextVal, nextComp]);
+      INSERT OR REPLACE INTO habit_logs (habitId, date, value, completed, photo, outcome)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, todayStr, nextVal, nextComp, nextPhoto || null, nextOutcome || null]);
 
     // Cascade complete matching timeline items
     await sqlRun(`

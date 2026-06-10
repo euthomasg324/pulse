@@ -4,6 +4,8 @@ export interface HabitLog {
   date: string; // YYYY-MM-DD
   value: number;
   completed: boolean;
+  photo?: string;
+  outcome?: string;
 }
 
 export interface Habit {

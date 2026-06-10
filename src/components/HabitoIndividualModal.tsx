@@ -384,12 +384,24 @@ export default function HabitoIndividualModal({
                     logsList.map((log, index) => (
                       <div 
                         key={index}
-                        className="flex justify-between items-center bg-zinc-900/30 border border-white/5 rounded-lg px-2.5 py-1.5"
+                        className="flex flex-col bg-zinc-900/30 border border-white/5 rounded-lg p-2.5 gap-1"
                       >
-                        <span className="text-zinc-500">{log.date}</span>
-                        <span className={log.completed ? "text-emerald-400 font-bold" : "text-zinc-300"}>
-                          {log.value} / {habit.targetValue} {log.completed ? "(ok)" : ""}
-                        </span>
+                        <div className="flex justify-between items-center w-full">
+                          <span className="text-zinc-500">{log.date}</span>
+                          <span className={log.completed ? "text-emerald-400 font-bold" : "text-zinc-300"}>
+                            {log.value} / {habit.targetValue} {log.completed ? "(ok)" : ""}
+                          </span>
+                        </div>
+                        {(log.outcome || log.photo) && (
+                          <div className="flex flex-row items-center justify-between mt-1 pt-1 border-t border-white/5">
+                            {log.outcome ? (
+                              <span className="text-zinc-400 text-[8.5px] italic line-clamp-2">"{log.outcome}"</span>
+                            ) : <span></span>}
+                            {log.photo && (
+                              <img src={log.photo} alt="Daily Record" className="w-6 h-6 rounded-md object-cover overflow-hidden bg-zinc-800 border border-white/10 shrink-0 shadow-lg" />
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
