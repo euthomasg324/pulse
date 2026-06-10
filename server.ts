@@ -897,16 +897,27 @@ async function loadStateFromSqlite() {
     const dbNotes = await sqlAll("SELECT * FROM notifications ORDER BY id DESC LIMIT 15");
 
     const habits: Habit[] = dbHabits.map((h: any) => {
-      const logs = dbLogs
+      const rawLogs = dbLogs
         .filter((l: any) => l.habitId === h.id || l.habitid === h.id || l.habitId === h.Id || l.habitid === h.Id)
         .map((l: any) => ({
-          date: l.date || l.Date,
+          date: String(l.date || l.Date),
           value: Number(l.value ?? l.Value ?? l.value ?? 0),
           completed: Boolean(l.completed ?? l.Completed ?? false),
           photo: l.photo || l.Photo || undefined,
           outcome: l.outcome || l.Outcome || undefined
-        }))
-        .sort((a,b) => a.date.localeCompare(b.date));
+        }));
+
+      // Sort descending (newest first)
+      rawLogs.sort((a, b) => b.date.localeCompare(a.date));
+
+      const logs: any[] = [];
+      const seenDates = new Set();
+      for (const lg of rawLogs) {
+        if (!seenDates.has(lg.date)) {
+          seenDates.add(lg.date);
+          logs.push(lg);
+        }
+      }
 
       return {
         id: h.id || h.Id || h.id,

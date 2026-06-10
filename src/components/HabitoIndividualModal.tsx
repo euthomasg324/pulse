@@ -337,15 +337,19 @@ export default function HabitoIndividualModal({
                   
                   {/* 16 days grid heatmap */}
                   <div className="flex flex-wrap gap-1.5 justify-center max-w-[290px] mx-auto">
-                    {logsList.slice(0, 16).map((log, lIdx) => {
-                      const pct = log.completed ? 100 : Math.round((log.value / habit.targetValue) * 100);
+                    {Array.from({ length: 16 }, (_, i) => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - (15 - i));
+                      const dateStr = d.toISOString().split('T')[0];
+                      const log = logsList.find(l => l.date === dateStr);
+                      const pct = log ? (log.completed ? 100 : Math.round((log.value / habit.targetValue) * 100)) : 0;
                       return (
                         <div
-                          key={lIdx}
+                          key={dateStr}
                           className={`w-[26px] h-[26px] rounded-md flex flex-col items-center justify-center font-mono text-[7.5px] font-black border transition ${getHeatmapColor(pct)}`}
-                          title={`Data: ${log.date} | Progresso: ${log.value}`}
+                          title={`Data: ${dateStr} | Progresso: ${log ? log.value : 0}`}
                         >
-                          <span className="opacity-40 text-[5.5px] block leading-none">{log.date.split('-')[2]}</span>
+                          <span className="opacity-40 text-[5.5px] block leading-none">{dateStr.split('-')[2]}</span>
                           <span className="block">{pct > 0 ? `${pct}%` : "0%"}</span>
                         </div>
                       );
