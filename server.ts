@@ -1601,6 +1601,63 @@ app.get("/pulse_logo.png", (req, res) => {
   res.sendFile(path.join(process.cwd(), "src/assets/images/pulse_app_logo_1780126633631.png"));
 });
 
+app.post("/api/test-voice", async (req, res) => {
+  try {
+    const { referenceId } = req.body;
+    
+    // 1. Generate text using Gemini
+    let textToSpeak = "Atenção. Aqui é o seu eu do futuro. Continue focado no processo, a disciplina de hoje é o nosso sucesso de amanhã. Não pare agora.";
+    if (ai) {
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: "Gere uma mensagem ultra curta (2 frases max), estoica e motivacional como se você fosse o 'Eu do futuro' da pessoa, direto do Paraíso que ela alcançou graças à sua disciplina hoje. Use um tom firme, confiante e recompensador.",
+        });
+        if (response.text) {
+          textToSpeak = response.text.replace(/[*"]/g, '').trim();
+        }
+      } catch (e) {
+        console.error("Gemini failed for voice:", e);
+      }
+    }
+
+    // 2. Call Fish.audio API
+    const fishApiKey = process.env.FISH_AUDIO_API_KEY;
+    if (!fishApiKey) {
+      return res.status(400).json({ error: "Variável FISH_AUDIO_API_KEY não configurada no servidor." });
+    }
+
+    console.log("Calling Fish Audio API for text:", textToSpeak);
+
+    const fishRes = await fetch("https://api.fish.audio/v1/tts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${fishApiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: textToSpeak,
+        reference_id: referenceId || "c062455a53e54b7db0beae70d290a29b",
+        format: "mp3"
+      })
+    });
+
+    if (!fishRes.ok) {
+      const errTxt = await fishRes.text();
+      console.error("Fish audio error:", errTxt);
+      return res.status(fishRes.status).json({ error: "Falha na API Fish Audio: " + errTxt });
+    }
+
+    const audioBuffer = await fishRes.arrayBuffer();
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.send(Buffer.from(audioBuffer));
+
+  } catch (err: any) {
+    console.error("Test voice error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Configure Vite or simple asset server
 const isProduction = process.env.NODE_ENV === "production";
 

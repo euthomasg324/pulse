@@ -99,7 +99,8 @@ export default function HabitoIndividualModal({
       
       let score = 0;
       if (log) {
-        score = log.completed ? 100 : Math.round((log.value / habit.targetValue) * 100);
+        score = log.completed ? 100 : Math.round(((log.value || 0) / (habit.targetValue || 1)) * 100);
+        if (isNaN(score)) score = 0;
       } else {
         // Real tracking, if there's no log, score is true 0
         score = 0;
@@ -113,7 +114,7 @@ export default function HabitoIndividualModal({
   };
 
   const getHeatmapColor = (score: number) => {
-    if (score === 0) return "bg-zinc-950 border-white/5 text-zinc-700";
+    if (typeof score !== 'number' || isNaN(score) || score <= 0) return "bg-zinc-950 border-white/5 text-zinc-700";
     if (score < 40) return "bg-rose-950/30 border-rose-900/20 text-rose-400";
     if (score < 80) return "bg-amber-950/30 border-amber-900/20 text-amber-500";
     return "bg-emerald-500 border-transparent text-black font-semibold";
@@ -342,7 +343,8 @@ export default function HabitoIndividualModal({
                       d.setDate(d.getDate() - (15 - i));
                       const dateStr = d.toISOString().split('T')[0];
                       const log = logsList.find(l => l.date === dateStr);
-                      const pct = log ? (log.completed ? 100 : Math.round((log.value / habit.targetValue) * 100)) : 0;
+                      let pct = log ? (log.completed ? 100 : Math.round(((log.value || 0) / (habit.targetValue || 1)) * 100)) : 0;
+                      if (isNaN(pct)) pct = 0;
                       return (
                         <div
                           key={dateStr}

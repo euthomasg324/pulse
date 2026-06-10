@@ -17,6 +17,8 @@ import {
   Pause,
   RotateCcw,
   Sparkles,
+  Loader2,
+  Volume2
 } from "lucide-react";
 import { iconMap, colorPresets } from "../data";
 import { motion, AnimatePresence } from "motion/react";
@@ -98,6 +100,34 @@ export default function HojeTab({
   const [mantraCompleted, setMantraCompleted] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1.0);
   const [isScrollingActive, setIsScrollingActive] = useState(true);
+
+  const [isVoiceLoading, setIsVoiceLoading] = useState(false);
+
+  const handleTestVoice = async () => {
+    setIsVoiceLoading(true);
+    try {
+      const response = await fetch("/api/test-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referenceId: "c062455a53e54b7db0beae70d290a29b" })
+      });
+
+      if (!response.ok) {
+        alert("Erro ao testar voz. Certifique que adicionou a variável FISH_AUDIO_API_KEY.");
+        setIsVoiceLoading(false);
+        return;
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.onended = () => setIsVoiceLoading(false);
+      audio.play();
+    } catch (e) {
+      console.error("Audio play error", e);
+      setIsVoiceLoading(false);
+    }
+  };
 
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
@@ -823,6 +853,17 @@ export default function HojeTab({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              playHapticSound("tick");
+              handleTestVoice();
+            }}
+            disabled={isVoiceLoading}
+            className="flex items-center gap-1.5 px-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-purple-400 rounded-full font-bold text-[10px] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)] active:scale-95 border border-purple-500/20 disabled:opacity-50"
+            title="Eu do Futuro (Voz)"
+          >
+            {isVoiceLoading ? <Loader2 className="w-4 h-4 animate-spin text-purple-400" /> : <Volume2 className="w-4 h-4" />}
+          </button>
           <button
             onClick={() => {
               playHapticSound("tick");
