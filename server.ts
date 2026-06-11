@@ -826,6 +826,16 @@ async function initSqlite() {
       value TEXT
     )
   `);
+
+  await sqlRun(`
+    CREATE TABLE IF NOT EXISTS daily_reflections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      missed_habits TEXT NOT NULL,
+      ai_feedback TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
 }
 
 // Read entire DB state and sync into memory dbState mapping
@@ -895,6 +905,12 @@ async function loadStateFromSqlite() {
     const dbLogs = await sqlAll("SELECT * FROM habit_logs");
     const dbTimeline = await sqlAll("SELECT * FROM timeline");
     const dbNotes = await sqlAll("SELECT * FROM notifications ORDER BY id DESC LIMIT 15");
+    let dbReflections: any[] = [];
+    try {
+      dbReflections = await sqlAll("SELECT * FROM daily_reflections ORDER BY id DESC");
+    } catch(e) {
+      // ignore if table doesn't exist yet
+    }
 
     const habits: Habit[] = dbHabits.map((h: any) => {
       const rawLogs = dbLogs
@@ -954,11 +970,19 @@ async function loadStateFromSqlite() {
     }));
 
     const notifications: string[] = dbNotes.map((n: any) => n.message || n.Message || "");
+    const reflections = dbReflections.map(r => ({
+      id: r.id,
+      date: r.date,
+      missedHabits: JSON.parse(r.missed_habits || "[]"),
+      aiFeedback: r.ai_feedback,
+      createdAt: r.created_at
+    }));
 
     dbState = {
       habits,
       timeline: timeline.sort((a,b) => a.time.localeCompare(b.time)),
-      notifications: notifications.length > 0 ? notifications : defaultNotifications
+      notifications: notifications.length > 0 ? notifications : defaultNotifications,
+      reflections
     };
 
     console.log(`SQLite system synced perfectly. Habits: ${dbState.habits.length}`);
@@ -1592,7 +1616,8 @@ Frase com no máximo 20 palavras. Escreva no formato:
     tendencyText,
     bestTimeText,
     dynamicPhrase,
-    habitsAnalysis
+    habitsAnalysis,
+    reflections: dbState.reflections || []
   });
 });
 
@@ -1654,6 +1679,68 @@ app.post("/api/test-voice", async (req, res) => {
 
   } catch (err: any) {
     console.error("Test voice error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/reflection", async (req, res) => {
+  try {
+    const { date, missedHabits } = req.body; // missedHabits: Array<{ habitId: string, name: string, reason: string }>
+    if (!date || !missedHabits || !Array.isArray(missedHabits)) {
+      return res.status(400).json({ error: "Parâmetros inválidos." });
+    }
+
+    let aiFeedback = "Mantenha o foco. O importante é não falhar duas vezes seguidas.";
+    
+    if (ai && missedHabits.length > 0) {
+      try {
+        const prompt = `O usuário não completou os seguintes hábitos na data ${date}:
+${missedHabits.map(h => `- ${h.name}: Motivo: ${h.reason}`).join('\n')}
+
+Por favor, analise essas justificativas. Dê um feedback muito curto (1 ou 2 parágrafos no máximo), encorajador, disciplinado e estoico. Se notar padrão de cansaço ou desculpas, seja levemente firme, mas focado no processo e na retomada amanhã. Ao final, sugira 1 ajuste prático.`;
+        
+        const response = await ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: prompt,
+        });
+
+        if (response.text) {
+          aiFeedback = response.text.trim();
+        }
+      } catch (err) {
+        console.error("Gemini failed during daily reflection:", err);
+      }
+    } else if (missedHabits.length === 0) {
+      aiFeedback = "Excelente trabalho! Você concluiu todos os seus principais hábitos hoje. Este é o caminho da maestria.";
+    }
+
+    // Save to DB
+    const missedJson = JSON.stringify(missedHabits);
+    const createdAt = new Date().toISOString();
+    await sqlRun(`
+      INSERT INTO daily_reflections (date, missed_habits, ai_feedback, created_at)
+      VALUES (?, ?, ?, ?)
+    `, [date, missedJson, aiFeedback, createdAt]);
+
+    // Also add a timeline event for this reflection
+    const timelineId = `ref-${Date.now()}`;
+    await sqlRun(`
+      INSERT INTO timeline (id, time, title, habitId, completed)
+      VALUES (?, ?, ?, ?, ?)
+    `, [timelineId, createdAt, "Reflexão Diária Concluída", "system", 1]);
+
+    // Add a notification summary too
+    await sqlRun(`
+      INSERT INTO notifications (message, createdAt)
+      VALUES (?, ?)
+    `, [`Reflexão salva de ${date}. A IA deixou um insight para você avaliar.`, createdAt]);
+
+    // Reload state if using JSON db locally
+    await loadStateFromSqlite();
+
+    res.json({ success: true, aiFeedback });
+  } catch (err: any) {
+    console.error("Reflection POST error:", err);
     res.status(500).json({ error: err.message });
   }
 });

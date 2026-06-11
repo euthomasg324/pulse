@@ -29,7 +29,7 @@ interface AnalyticsTabProps {
 export default function AnalyticsTab({ playHapticSound }: AnalyticsTabProps) {
   const [insights, setInsights] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSubTab, setActiveSubTab] = useState<'geral' | 'gargalos' | 'graficos'>('geral');
+  const [activeSubTab, setActiveSubTab] = useState<'geral' | 'gargalos' | 'graficos' | 'reflexoes'>('geral');
 
   // Load insights from SQL backend `/api/insights`
   useEffect(() => {
@@ -117,21 +117,21 @@ export default function AnalyticsTab({ playHapticSound }: AnalyticsTabProps) {
       </div>
 
       {/* Primary Sub-Navigation Row */}
-      <div className="shrink-0 grid grid-cols-3 gap-1 bg-zinc-950 border border-white/5 p-1 rounded-2xl mb-4 text-[10px] font-bold">
-        {(['geral', 'gargalos', 'graficos'] as const).map((subTab) => (
+      <div className="shrink-0 grid grid-cols-4 gap-1 bg-zinc-950 border border-white/5 p-1 rounded-2xl mb-4 text-[10px] font-bold">
+        {(['geral', 'gargalos', 'graficos', 'reflexoes'] as const).map((subTab) => (
           <button
             key={subTab}
             onClick={() => {
               playHapticSound('tick');
               setActiveSubTab(subTab);
             }}
-            className={`py-2 rounded-xl text-center cursor-pointer transition uppercase tracking-wider ${
+            className={`py-2 rounded-xl text-center cursor-pointer transition uppercase tracking-wider text-[8px] sm:text-[9px] ${
               activeSubTab === subTab 
                 ? 'bg-zinc-900 text-white border border-white/10 shadow-sm' 
                 : 'text-zinc-500 hover:text-zinc-300'
             }`}
           >
-            {subTab === 'geral' ? 'Geral' : subTab === 'gargalos' ? 'FALHAS / GARGALOS' : 'Gráficos'}
+            {subTab === 'geral' ? 'Geral' : subTab === 'gargalos' ? 'FALHAS' : subTab === 'reflexoes' ? 'REFLEXÕES' : 'Gráficos'}
           </button>
         ))}
       </div>
@@ -631,6 +631,67 @@ export default function AnalyticsTab({ playHapticSound }: AnalyticsTabProps) {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* SUBTAB 4: REFLEXÕES DIÁRIAS E IA */}
+        {activeSubTab === 'reflexoes' && (
+          <div className="space-y-4">
+            <div className="bg-zinc-950/40 border border-white/5 rounded-2.5xl p-4">
+              <div className="flex justify-between items-center text-[9px] text-zinc-500 tracking-widest border-b border-white/5 pb-2.5 mb-3.5">
+                <span>HISTÓRICO DE AUDITORIA E INTELIGÊNCIA</span>
+                <Sparkles className="w-4 h-4 text-indigo-400" />
+              </div>
+              
+              {!insights?.reflections || insights.reflections.length === 0 ? (
+                <div className="text-center text-zinc-600 text-[10px] py-12 px-4 leading-relaxed bg-zinc-900/20 rounded-2xl border border-white/5 mx-auto">
+                  <div className="flex justify-center mb-2">
+                    <Activity className="w-6 h-6 animate-pulse" />
+                  </div>
+                  NENHUMA REFLEXÃO EXECUTADA AINDA.<br/>O SISTEMA REQUER FECHAMENTOS DIÁRIOS PARA CALIBRAR A I.A. E AJUSTAR A MEMÓRIA DE LONGO PRAZO.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {insights.reflections.map((ref: any, idx: number) => (
+                    <div key={ref.id} className="bg-black/60 border border-white/5 rounded-2xl p-4 space-y-3 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-2 opacity-50 text-[10px] text-zinc-600 font-bold mix-blend-screen pointer-events-none select-none">
+                        #{ref.id}
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-3.5 h-3.5 text-zinc-500" />
+                        <span className="text-[10px] text-zinc-400 tracking-widest">{ref.date}</span>
+                      </div>
+                      
+                      {ref.missedHabits && ref.missedHabits.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Falhas Justificadas</h4>
+                          <div className="space-y-2">
+                            {ref.missedHabits.map((habit: any, hIdx: number) => (
+                              <div key={hIdx} className="bg-rose-950/10 border border-rose-900/20 p-2.5 rounded-xl">
+                                <div className="text-rose-400 font-bold text-xs mb-1">{habit.name}</div>
+                                <div className="text-zinc-400 text-[10px] font-mono whitespace-pre-wrap pl-2 border-l border-rose-900/50">Motivo: {habit.reason}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {ref.aiFeedback && (
+                        <div className="mt-3 bg-indigo-950/20 border border-indigo-900/30 p-3.5 rounded-xl">
+                          <h4 className="text-[9px] text-indigo-400 uppercase tracking-widest font-bold mb-1.5 flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3" /> INSIGHT DO SISTEMA
+                          </h4>
+                          <div className="text-indigo-200/80 text-[10.5px] font-mono whitespace-pre-wrap leading-relaxed normal-case">
+                            {ref.aiFeedback}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

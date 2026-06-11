@@ -69,8 +69,17 @@ export interface SecurityStatus {
   modeGuerra: boolean;
 }
 
+export interface DailyReflection {
+  id: number;
+  date: string;
+  missedHabits: { habitId: string; name: string; reason: string }[];
+  aiFeedback: string;
+  createdAt: string;
+}
+
 export interface ServerState {
   habits: Habit[];
   timeline: TimelineItem[];
   notifications: string[];
+  reflections: DailyReflection[];
 }

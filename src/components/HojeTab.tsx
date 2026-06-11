@@ -23,6 +23,7 @@ import {
 import { iconMap, colorPresets } from "../data";
 import { motion, AnimatePresence } from "motion/react";
 import InputCaptureModal from "./InputCaptureModal";
+import { DailyReflectionModal } from "./DailyReflectionModal";
 
 interface HojeTabProps {
   habits: Habit[];
@@ -129,6 +130,7 @@ export default function HojeTab({
     }
   };
 
+  const [isReflectionOpen, setIsReflectionOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
 
@@ -856,6 +858,17 @@ export default function HojeTab({
           <button
             onClick={() => {
               playHapticSound("tick");
+              setIsReflectionOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full font-bold text-[10px] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)] active:scale-95 border border-indigo-400/20"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Fechamento</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              playHapticSound("tick");
               handleTestVoice();
             }}
             disabled={isVoiceLoading}
@@ -1440,6 +1453,18 @@ export default function HojeTab({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* DAILY REFLECTION MODAL (Fechamento do Dia) */}
+      <DailyReflectionModal
+        isOpen={isReflectionOpen}
+        onClose={() => setIsReflectionOpen(false)}
+        habits={habits}
+        playHapticSound={playHapticSound}
+        onReflectionSubmit={() => {
+          // You could trigger a state refresh here if necessary.
+          // App.tsx usually polls or the local updates handle it.
+        }}
+      />
     </div>
   );
 }
